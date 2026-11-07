@@ -3,7 +3,7 @@ name: swarm-engineering
 description: Engineering execution methods for Jcode Swarm workers. Defines bounded investigation, Developer implementation, Tester verification, Reviewer code review, role boundaries, handoffs, and evidence-based completion.
 ---
 
-<!-- Added by the @local/swarm-workflow plugin: this file is the user's own skill text. Two deliberate exceptions: the §1 bullet below that points at the global execution policy (changed on the user's request, because `prompt-overlay.md` does not exist), and §11–§17, which the plugin adds at the end of the file, each behind a marker comment. -->
+<!-- Added by the @local/swarm-workflow plugin: this file is the user's own skill text. Two deliberate exceptions: the §1 bullet below that points at the global execution policy (changed on the user's request, because `prompt-overlay.md` does not exist), and the tail of the file: §11–§13 are the USER's own prose relocated verbatim (the orchestration policy's §6, §9 and §10), while §14–§17 are the plugin's own rules. Each section sits behind its own marker comment. -->
 
 # Swarm Engineering Skill
 
@@ -478,7 +478,7 @@ When Skill availability or inheritance is uncertain:
 
 Workers must follow the actual runtime capabilities and tool restrictions of the active Jcode version.
 
-<!-- Added by the @local/swarm-workflow plugin: the Coordinator-side methods the orchestration policy no longer carries inline. §11–§14 are Coordinator-side; a worker needs its own role section (§3, §4, §5), the shared contract in §8, and the requirement-matching rules in §16 and §17. -->
+<!-- Added by the @local/swarm-workflow plugin: the Coordinator-side methods the orchestration policy no longer carries inline. §11–§13 are the USER's own prose — the orchestration policy's §6, §9 and §10, relocated verbatim — and §14–§17 are the plugin's own rules. A worker needs its own role section (§3, §4, §5), the shared contract in §8, and the requirement rules in §16 and §17. -->
 
 ## 11. Role Dependencies and Execution Patterns
 
@@ -598,7 +598,7 @@ Practice learned in the field, added by the plugin. It does not change the polic
 - **An assignment names every surface the worker may touch.** Give it the files it may write, the commands it may run and the surfaces it must not touch (the plugin directory, the profile and its plugin rows, the network, other people's workspaces). A worker that meets a surface it was not given stops and reports; it does not explore, and it does not install anything into the host.
 - **Use `subagent`, not `subagent_fork`, when the parent conversation is long.** A forked worker inherits the whole parent transcript — including the original user request — and may act on that instead of its assignment. The rule for the brief is the same as the rule for the tool: a fresh worker gets a fresh context.
 - **Name one test file per function in every brief.** The Developer owns the implementation smoke test; the Tester owns the requirement-clause file. Two workers never author tests for the same clause — that duplication is the defect the Tester is supposed to find in the implementation, not in another test file. The Tester's requirement-clause file cites the requirement each test covers, and a requirement with no test is a reported coverage gap, never a silent pass.
-- **State the requirements in every brief.** Every brief that carries requirements states them explicitly, one line each: the requirement, the observable check that proves it, and its source (the assignment, a repository rule by `file:line`, or the behaviour that must not change). The Developer does not author requirements; the Coordinator states them. When the work needs a shared file, the brief points at that file instead of repeating it.
+- **Write the requirements down before you dispatch, and point the brief at that file.** Every requirement is one block in `.swarm/requirements/<work-item>.md`: the requirement, the observable check that proves it, and its source (the assignment, a repository rule by `file:line`, or the behaviour that must not change). The Developer does not author requirements; the Coordinator writes them, and reconciles the file with the repository's existing tests before it is written. The brief names the file and the requirements it covers and does not repeat their text — a copy in a chat message is what drifts. §17 carries the full handover rule, §16 the matching rule every lane reports against.
 - **Accept a worker's executed evidence as the evidence for that claim.** Re-run a check yourself only when the files changed after that worker's run, or when two reports disagree — and then run the independent verification once, at acceptance.
 - **Never poll with sleeps or wait loops.** You are notified when a worker finishes: do other work, or wait for the completion notice.
 - **Keep one ledger row per round** — the agents spawned, the files each touched, the verdict, and where the evidence came from — written once, in order.
