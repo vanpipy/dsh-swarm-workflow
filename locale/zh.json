@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Swarm 工作流",
+    "description": "提供集群编排策略：把会话的主智能体提示为 Coordinator，为被委派的子智能体提供按角色区分的执行者提示，并注册 swarm-engineering 技能。"
+  }
+}

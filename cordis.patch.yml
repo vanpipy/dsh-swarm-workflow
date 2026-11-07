@@ -1,0 +1,3 @@
+- insert:
+    - id: swarm-workflow
+      name: '@local/swarm-workflow'

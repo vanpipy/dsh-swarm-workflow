@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Swarm Workflow",
+    "description": "Ships the swarm orchestration policy: prompts the session's main agent as the Coordinator, gives delegated subagents a role-specific worker prompt, and registers the swarm-engineering skill."
+  }
+}
