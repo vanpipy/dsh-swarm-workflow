@@ -649,6 +649,6 @@ When the work carries requirements, they live in a FILE, not in the chat. The Co
 - The brief names the file and the requirements it covers. It does not repeat the requirement text: a copy in a chat message is what drifts.
 - The board entry carries the same path, for the same reason.
 - The file is where the requirement text comes from. If the brief or the board entry describes a requirement differently, or names a requirement the file does not define, the lane REPORTS THE CONFLICT and stops that requirement — it does not pick a winner and it does not invent the missing one. The requirement is `not demonstrated` until the conflict is resolved; the other requirements are unaffected.
-- A lane cites the requirement as `<file>:<line>`. A verdict without that citation is `not demonstrated`.
+- A lane cites the requirement as `<file>:<line>`. A verdict without that citation is `not demonstrated`. A line number is a convenience, not an identity: it drifts the moment the file grows, so the lane resolves its citation against the requirement it names before it reports — a citation that points at a different requirement is worse than no citation.
 - A requirement whose file cannot be read is `not demonstrated`, never `met`.
 - A requirements file is only authoritative over the behaviour it names. Before it is written, the Coordinator reconciles it with the repository's existing tests; a requirement that contradicts an existing test is a conflict in its own right, and it is reported like any other — the lane does not pick a winner between the file and the test.
