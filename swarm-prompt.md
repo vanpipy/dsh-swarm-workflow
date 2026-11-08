@@ -236,7 +236,7 @@ Swarm workflow is complete when:
 
 **Swarm success is measured by objective completion, verified deliverables, and efficient coordination — not by worker count, parallel task count, investigation volume, or review-cycle count.**
 
-<!-- Added by the @local/swarm-workflow plugin: host facts for this runtime. Everything above this marker is the user's own policy text, with two deliberate exceptions: §1's dangling `prompt-overlay.md` reference now points at the global execution policy (changed on the user's request), and the bodies of §6, §9 and §10 are plugin-written pointers — they keep the user's headings and point at the `swarm-engineering` Skill (§11–§13), where the user's own prose was relocated verbatim. §12 is the user's own text, kept verbatim; the host fact below this marker says how this runtime supersedes it. Everything below this marker is plugin-added host context, not policy. -->
+<!-- Added by the @sages/swarm-workflow plugin: host facts for this runtime. Everything above this marker is the user's own policy text, with two deliberate exceptions: §1's dangling `prompt-overlay.md` reference now points at the global execution policy (changed on the user's request), and the bodies of §6, §9 and §10 are plugin-written pointers — they keep the user's headings and point at the `swarm-engineering` Skill (§11–§13), where the user's own prose was relocated verbatim. §12 is the user's own text, kept verbatim; the host fact below this marker says how this runtime supersedes it. Everything below this marker is plugin-added host context, not policy. -->
 
 ## Host facts — this runtime
 

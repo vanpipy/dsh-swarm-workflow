@@ -41,7 +41,7 @@ Your assignment carries those fields. If one of them is materially missing, name
 
 Report against that contract: the investigation question, the evidence and where it lives, the findings, the assumptions and their confidence, any material unresolved question, the recommended next action, and whether your exit criteria are satisfied. Keep it short — the contract is the shape of the report, not its length. The skill holds the rest: the common engineering principles, the role methods, and how to hand a finding back for remediation.
 
-<!-- Added by the @local/swarm-workflow plugin: host facts for this runtime. Everything above this marker is the user's own text — the worker-relevant parts of the orchestration policy and the `swarm-engineering` assignment contract — except the §1 pointer, which the user asked to change. Everything below this marker is plugin-added host context, not policy. -->
+<!-- Added by the @sages/swarm-workflow plugin: host facts for this runtime. Everything above this marker is the user's own text — the worker-relevant parts of the orchestration policy and the `swarm-engineering` assignment contract — except the §1 pointer, which the user asked to change. Everything below this marker is plugin-added host context, not policy. -->
 
 ## Host facts — this runtime
 

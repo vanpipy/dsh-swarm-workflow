@@ -1,5 +1,5 @@
 window.__ModuleLoader__.load({
-  id: '@local/swarm-workflow',
+  id: '@sages/swarm-workflow',
   factory(require) {
     const React = require('react');
     const h = React.createElement;
