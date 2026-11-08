@@ -620,12 +620,24 @@ export function buildSwarmTools(ctx) {
     // and when it carries no member the read is refused, not guessed.
     const chain = []
     const seen = new Set()
-    let current = parent
-    while (current !== undefined && current?.id !== undefined && !seen.has(current.id)) {
-      seen.add(current.id)
-      chain.push(current)
-      current = ownerOf(current)
+    const push = (candidate) => {
+      if (candidate?.id === undefined || seen.has(candidate.id)) return
+      seen.add(candidate.id)
+      chain.push(candidate)
     }
+    // The walk starts at the CALLER, not at the parent the tool context
+    // names: the host does not always fill that field in — a delegated
+    // worker that called the tool with no parent in its context would
+    // otherwise walk an empty chain and refuse a read it is entitled to.
+    // The caller's own owner is the first ancestor either way.
+    let current = agent
+    while (current !== undefined) {
+      push(current)
+      const owner = ownerOf(current)
+      if (owner === undefined || owner.id === current.id) break
+      current = owner
+    }
+    if (parent !== undefined) push(parent)
     for (const candidate of chain) {
       const candidateMembership = membershipOf(candidate)
       if (candidateMembership !== undefined) {
