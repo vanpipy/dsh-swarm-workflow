@@ -3,7 +3,7 @@ name: swarm-engineering
 description: Engineering execution methods for Jcode Swarm workers. Defines bounded investigation, Developer implementation, Tester verification, Reviewer code review, role boundaries, handoffs, and evidence-based completion.
 ---
 
-<!-- Added by the @sages/swarm-workflow plugin: this file is the user's own skill text. Two deliberate exceptions: the bullet in the *Purpose* section below that points at the global execution policy (changed on the user's request, because `prompt-overlay.md` does not exist), and the tail of the file: the three sections *Role Dependencies and Execution Patterns*, *Review and Verification Termination* and *Stalling Detection and Recovery* are the USER's own prose relocated verbatim from the orchestration policy's matching sections, while *Coordinator Practice*, *Host facts — this runtime*, *Requirement Matching* and *Requirement handover* are the plugin's own rules. Each section sits behind its own marker comment. -->
+<!-- Added by the dsh-swarm-workflow plugin: this file is the user's own skill text. Two deliberate exceptions: the bullet in the *Purpose* section below that points at the global execution policy (changed on the user's request, because `prompt-overlay.md` does not exist), and the tail of the file: the three sections *Role Dependencies and Execution Patterns*, *Review and Verification Termination* and *Stalling Detection and Recovery* are the USER's own prose relocated verbatim from the orchestration policy's matching sections, while *Coordinator Practice*, *Host facts — this runtime*, *Requirement Matching* and *Requirement handover* are the plugin's own rules. Each section sits behind its own marker comment. -->
 
 # Swarm Engineering Skill
 
@@ -478,7 +478,7 @@ When Skill availability or inheritance is uncertain:
 
 Workers must follow the actual runtime capabilities and tool restrictions of the active Jcode version.
 
-<!-- Added by the @sages/swarm-workflow plugin: the Coordinator-side methods the orchestration policy no longer carries inline. The three sections *Role Dependencies and Execution Patterns*, *Review and Verification Termination* and *Stalling Detection and Recovery* are the USER's own prose — relocated verbatim from the orchestration policy's matching sections — and the sections after them are the plugin's own rules. A worker needs its own role section (*Developer Role*, *Tester Role*, *Reviewer Role*), the shared contract in *Assignment and Reporting Contract*, and the requirement rules in *Requirement Matching* and *Requirement handover*. -->
+<!-- Added by the dsh-swarm-workflow plugin: the Coordinator-side methods the orchestration policy no longer carries inline. The three sections *Role Dependencies and Execution Patterns*, *Review and Verification Termination* and *Stalling Detection and Recovery* are the USER's own prose — relocated verbatim from the orchestration policy's matching sections — and the sections after them are the plugin's own rules. A worker needs its own role section (*Developer Role*, *Tester Role*, *Reviewer Role*), the shared contract in *Assignment and Reporting Contract*, and the requirement rules in *Requirement Matching* and *Requirement handover*. -->
 
 ## 11. Role Dependencies and Execution Patterns
 
@@ -586,7 +586,7 @@ Potential signs:
 
 Do not restart completed work without justification. Do not let an investigation or review loop block the workflow when a focused next action is available.
 
-<!-- Added by the @sages/swarm-workflow plugin: the Coordinator practice that the orchestration policy no longer carries inline. *Coordinator Practice* is Coordinator-side; a worker needs its own role section (*Developer Role*, *Tester Role*, *Reviewer Role*) and the shared contract in *Assignment and Reporting Contract*. -->
+<!-- Added by the dsh-swarm-workflow plugin: the Coordinator practice that the orchestration policy no longer carries inline. *Coordinator Practice* is Coordinator-side; a worker needs its own role section (*Developer Role*, *Tester Role*, *Reviewer Role*) and the shared contract in *Assignment and Reporting Contract*. -->
 
 ## 14. Coordinator Practice
 
@@ -603,14 +603,14 @@ Practice learned in the field, added by the plugin. It does not change the polic
 - **Never poll with sleeps or wait loops.** You are notified when a worker finishes: do other work, or wait for the completion notice.
 - **Keep one ledger row per round** — the agents spawned, the files each touched, the verdict, and where the evidence came from — written once, in order.
 
-<!-- Added by the @sages/swarm-workflow plugin: host facts for this runtime. Not skill text, not policy. -->
+<!-- Added by the dsh-swarm-workflow plugin: host facts for this runtime. Not skill text, not policy. -->
 
 ## 15. Host facts — this runtime
 
 - This host is the DeepSeek Harness, not Jcode. Where *Skill Availability and Execution* says "the active Jcode version", read it as the runtime you actually run in: check the tool surfaces you are given, and use the ones the host lists. The same applies to the orchestration policy's *Jcode Runtime and Model Configuration* section, whose runtime-specific wording belongs to another runtime.
 - A worker receives the parts of the global execution policy that bind it through the worker prompt and through this skill. The policy is not a separate file to open; it is not missing, it is delivered in the form that binds you.
 
-<!-- Added by the @sages/swarm-workflow plugin: requirement matching for every worker. Not skill text, not policy; the plugin's own rule. -->
+<!-- Added by the dsh-swarm-workflow plugin: requirement matching for every worker. Not skill text, not policy; the plugin's own rule. -->
 
 ## 16. Requirement Matching
 
@@ -631,7 +631,7 @@ If your assignment carried no requirements, say so and report it as a gap; do no
 
 This section adds to the review completion gate: a review is complete only when every requirement in the assignment carries a verdict and its evidence, or is reported as `not demonstrated`. A `not demonstrated` requirement blocks acceptance until it is checked, or until the Coordinator records an explicit waiver with a reason in the ledger row.
 
-<!-- Added by the @sages/swarm-workflow plugin: requirement handover for every worker. Not skill text, not policy; the plugin's own rule. -->
+<!-- Added by the dsh-swarm-workflow plugin: requirement handover for every worker. Not skill text, not policy; the plugin's own rule. -->
 
 ## 17. Requirement handover
 

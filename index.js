@@ -37,7 +37,7 @@ export const inject = ['systemPrompt', 'agents', 'skills']
 const SECTION_ORDER = 8000
 
 /** Origin label the skill registry requires on every loaded skill definition. */
-const SKILL_SOURCE = '@sages/swarm-workflow'
+const SKILL_SOURCE = 'dsh-swarm-workflow'
 
 /** The three bundled markdown files, relative to this module. */
 const COORDINATOR_PROMPT = './swarm-prompt.md'

@@ -1,5 +1,5 @@
 {
-  "name": "@sages/swarm-workflow",
+  "name": "dsh-swarm-workflow",
   "version": "1.0.0",
   "private": true,
   "type": "module",
