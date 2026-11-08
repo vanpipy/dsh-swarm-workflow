@@ -59,57 +59,76 @@ and whether the exit criteria are satisfied.
 
 ## Install
 
-Requirements: DSH with the Agent Teams profile enabled
-(`include:agent-team`, `include:tool-agent-team`, `include:ui-agent-team`) —
-that is what makes the native-team path available. A plain delegated
-subagent works too, with a reduced toolkit.
-
-**1. Get the bundle on disk** (clone or copy it), for example:
+**One route: the GitHub address.** In the desktop app open **Plugins → Add
+plugin** and paste
 
 ```
-D:\project\dsh-plugins\swarm-workflow
+github:vanpipy/dsh-swarm-workflow
 ```
 
-**2. Install it into the profile** by pointing `install_bundle` at the
-absolute package directory:
+or on the command line:
+
+```
+dsh plugin --profile desktop add github:vanpipy/dsh-swarm-workflow
+```
+
+Two things have to be true before that works:
+
+* **Git on the machine's PATH.** The host resolves a git address by running
+  `git ls-remote`, and the app inherits the PATH it was launched with — so
+  Git has to be installed (on Windows: `C:\Program Files\Git\cmd`), added to
+  the user PATH, and the app restarted once.
+* **The Agent Teams rows enabled** in the profile
+  (`include:agent-team`, `include:tool-agent-team`, `include:ui-agent-team`) —
+  that is what makes the native-team path available. A plain delegated
+  subagent works too, with a reduced toolkit.
+
+Then:
+
+1. **Start a new session.** A bundle's code is fixed for the life of a
+   session; the prompt files are re-read when they change and the skill is
+   re-registered on every re-apply — but validate changed behaviour in a new
+   session.
+2. **Check it:** run `/swarm`. It prints the live delegation and
+   coordination surfaces of the current session.
+
+The profile records the plugin as a git dependency of that repository, so the
+installed copy lives in the profile (`node_modules/dsh-swarm-workflow`). To
+move to a newer commit, publish it and run the install command again.
+
+## Develop
+
+The repository is also the checkout you edit. To work on the plugin itself,
+link the checkout into a profile instead of installing it from GitHub:
 
 ```
 plugin_manager install_bundle   target=D:\project\dsh-plugins\swarm-workflow
 ```
 
-The profile links the checkout directory, so later edits to the files are
-picked up once you re-apply the bundle (step 3).
-
-**3. Re-apply after every edit** to the prompt files:
+The profile then links the directory, so an edit is picked up after a
+re-apply:
 
 ```
 plugin_manager set_plugin   include:swarm-workflow   enabled=false
 plugin_manager set_plugin   include:swarm-workflow   enabled=true
 ```
 
-Off then on is the live proof: the `swarm-engineering` skill leaves the
-skill catalog and comes back.
-
-**4. Start a new session.** The bundle's code is fixed for the life of a
-session; the prompt files are re-read when they change and the skill is
-re-registered on every re-apply — but validate changed behaviour in a new
-session.
-
-**5. Check it:** run `/swarm`. It prints the live delegation and
-coordination surfaces of the current session.
+Off then on is the live proof: the `swarm-engineering` skill leaves the skill
+catalog and comes back. That link is a development convenience — it is not
+the install route.
 
 ## Uninstall and rename
 
 * `plugin_manager remove_bundle dsh-swarm-workflow` — the skill leaves the
   catalog at once.
-* pnpm's removal leaves the `node_modules` junction behind. Remove it with
+* A bundle that was installed by **linking** a checkout leaves the
+  `node_modules` junction behind. Remove it with
   `cmd /c rmdir <profile>\node_modules\dsh-swarm-workflow` — the junction
   only, never `/s`.
-* Renaming a bundle whose patch row id stays the same: remove the old
-  bundle **first**, then install the new one; installing first would make two
-  bundles contribute the same row id. The scope lives in four places:
-  `package.json`'s name, the patch row's name, `client.js`'s module id, and
-  the skill's `source` in `index.js`.
+* To move the install to another repository, remove the bundle **first**, then
+  install from the new address: two bundles contributing the same row id is a
+  conflict. The scope lives in four places: `package.json`'s name, the patch
+  row's name, `client.js`'s module id, and the skill's `source` in `index.js`.
 
 ## Files
 
