@@ -3,7 +3,7 @@ name: swarm-engineering
 description: Engineering execution methods for Jcode Swarm workers. Defines bounded investigation, Developer implementation, Tester verification, Reviewer code review, role boundaries, handoffs, and evidence-based completion.
 ---
 
-<!-- Added by the @sages/swarm-workflow plugin: this file is the user's own skill text. Two deliberate exceptions: the §1 bullet below that points at the global execution policy (changed on the user's request, because `prompt-overlay.md` does not exist), and the tail of the file: §11–§13 are the USER's own prose relocated verbatim (the orchestration policy's §6, §9 and §10), while §14–§17 are the plugin's own rules. Each section sits behind its own marker comment. -->
+<!-- Added by the @sages/swarm-workflow plugin: this file is the user's own skill text. Two deliberate exceptions: the bullet in the *Purpose* section below that points at the global execution policy (changed on the user's request, because `prompt-overlay.md` does not exist), and the tail of the file: the three sections *Role Dependencies and Execution Patterns*, *Review and Verification Termination* and *Stalling Detection and Recovery* are the USER's own prose relocated verbatim from the orchestration policy's matching sections, while *Coordinator Practice*, *Host facts — this runtime*, *Requirement Matching* and *Requirement handover* are the plugin's own rules. Each section sits behind its own marker comment. -->
 
 # Swarm Engineering Skill
 
@@ -478,7 +478,7 @@ When Skill availability or inheritance is uncertain:
 
 Workers must follow the actual runtime capabilities and tool restrictions of the active Jcode version.
 
-<!-- Added by the @sages/swarm-workflow plugin: the Coordinator-side methods the orchestration policy no longer carries inline. §11–§13 are the USER's own prose — the orchestration policy's §6, §9 and §10, relocated verbatim — and §14–§17 are the plugin's own rules. A worker needs its own role section (§3, §4, §5), the shared contract in §8, and the requirement rules in §16 and §17. -->
+<!-- Added by the @sages/swarm-workflow plugin: the Coordinator-side methods the orchestration policy no longer carries inline. The three sections *Role Dependencies and Execution Patterns*, *Review and Verification Termination* and *Stalling Detection and Recovery* are the USER's own prose — relocated verbatim from the orchestration policy's matching sections — and the sections after them are the plugin's own rules. A worker needs its own role section (*Developer Role*, *Tester Role*, *Reviewer Role*), the shared contract in *Assignment and Reporting Contract*, and the requirement rules in *Requirement Matching* and *Requirement handover*. -->
 
 ## 11. Role Dependencies and Execution Patterns
 
@@ -586,7 +586,7 @@ Potential signs:
 
 Do not restart completed work without justification. Do not let an investigation or review loop block the workflow when a focused next action is available.
 
-<!-- Added by the @sages/swarm-workflow plugin: the Coordinator practice that the orchestration policy no longer carries inline. §14 is Coordinator-side; a worker needs its own role section (§3, §4, §5) and the shared contract in §8. -->
+<!-- Added by the @sages/swarm-workflow plugin: the Coordinator practice that the orchestration policy no longer carries inline. *Coordinator Practice* is Coordinator-side; a worker needs its own role section (*Developer Role*, *Tester Role*, *Reviewer Role*) and the shared contract in *Assignment and Reporting Contract*. -->
 
 ## 14. Coordinator Practice
 
@@ -598,7 +598,7 @@ Practice learned in the field, added by the plugin. It does not change the polic
 - **An assignment names every surface the worker may touch.** Give it the files it may write, the commands it may run and the surfaces it must not touch (the plugin directory, the profile and its plugin rows, the network, other people's workspaces). A worker that meets a surface it was not given stops and reports; it does not explore, and it does not install anything into the host.
 - **Use `subagent`, not `subagent_fork`, when the parent conversation is long.** A forked worker inherits the whole parent transcript — including the original user request — and may act on that instead of its assignment. The rule for the brief is the same as the rule for the tool: a fresh worker gets a fresh context.
 - **Name one test file per function in every brief.** The Developer owns the implementation smoke test; the Tester owns the requirement-clause file. Two workers never author tests for the same clause — that duplication is the defect the Tester is supposed to find in the implementation, not in another test file. The Tester's requirement-clause file cites the requirement each test covers, and a requirement with no test is a reported coverage gap, never a silent pass.
-- **Write the requirements down before you dispatch, and point the brief at that file.** Every requirement is one block in `.swarm/requirements/<work-item>.md`: the requirement, the observable check that proves it, and its source (the assignment, a repository rule by `file:line`, or the behaviour that must not change). The Developer does not author requirements; the Coordinator writes them, and reconciles the file with the repository's existing tests before it is written. The brief names the file and the requirements it covers and does not repeat their text — a copy in a chat message is what drifts. §17 carries the full handover rule, §16 the matching rule every lane reports against.
+- **Write the requirements down before you dispatch, and point the brief at that file.** Every requirement is one block in `.swarm/requirements/<work-item>.md`: the requirement, the observable check that proves it, and its source (the assignment, a repository rule by `file:line`, or the behaviour that must not change). The Developer does not author requirements; the Coordinator writes them, and reconciles the file with the repository's existing tests before it is written. The brief names the file and the requirements it covers and does not repeat their text — a copy in a chat message is what drifts. The *Requirement handover* section carries the full handover rule and *Requirement Matching* the matching rule every lane reports against.
 - **Accept a worker's executed evidence as the evidence for that claim.** Re-run a check yourself only when the files changed after that worker's run, or when two reports disagree — and then run the independent verification once, at acceptance.
 - **Never poll with sleeps or wait loops.** You are notified when a worker finishes: do other work, or wait for the completion notice.
 - **Keep one ledger row per round** — the agents spawned, the files each touched, the verdict, and where the evidence came from — written once, in order.
@@ -607,7 +607,7 @@ Practice learned in the field, added by the plugin. It does not change the polic
 
 ## 15. Host facts — this runtime
 
-- This host is the DeepSeek Harness, not Jcode. Where §10 says "the active Jcode version", read it as the runtime you actually run in: check the tool surfaces you are given, and use the ones the host lists. The same applies to the orchestration policy's §12, whose runtime-specific wording belongs to another runtime.
+- This host is the DeepSeek Harness, not Jcode. Where *Skill Availability and Execution* says "the active Jcode version", read it as the runtime you actually run in: check the tool surfaces you are given, and use the ones the host lists. The same applies to the orchestration policy's *Jcode Runtime and Model Configuration* section, whose runtime-specific wording belongs to another runtime.
 - A worker receives the parts of the global execution policy that bind it through the worker prompt and through this skill. The policy is not a separate file to open; it is not missing, it is delivered in the form that binds you.
 
 <!-- Added by the @sages/swarm-workflow plugin: requirement matching for every worker. Not skill text, not policy; the plugin's own rule. -->
