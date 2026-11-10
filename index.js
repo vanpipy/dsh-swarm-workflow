@@ -30,6 +30,13 @@ import { readFileSync, statSync } from 'node:fs'
  * because this bundle must still load — and still ship a prompt — on a host
  * that has no command service at all. A declared service that the host lacks
  * would take the whole plugin down instead of one feature.
+ *
+ * The services behind the three primitives — the worktrees, the agent teams and
+ * the subagents service — are optional in the same way, and they are waited for
+ * instead of declared: each primitive is bound to a child fiber that starts when
+ * the host provides the service behind it (see registerWhenAvailable). A host
+ * that provides one of them after this plugin was applied still gets the
+ * primitive; a host that never provides it simply never gets that one.
  */
 export const inject = ['systemPrompt', 'agents', 'skills']
 
@@ -66,9 +73,11 @@ const REQUIRE_MARKER = /<!--\s*swarm:requires\s*([^>]*?)--\s*>/gi
  *
  * The strip is deliberately looser than the parser: it also removes a marker
  * that was never closed, so a hand-edited bundle never ships a raw comment to
- * the model.
+ * the model. A marker that spans two lines is removed whole — the pattern
+ * reaches the closing '-->' across line breaks — so no fragment of it survives
+ * in the text the model sees.
  */
-const REQUIRE_MARKER_STRIP = /<!--\s*swarm:requires[^\n]*?(?:--\s*>|$)/gim
+const REQUIRE_MARKER_STRIP = /<!--\s*swarm:requires[\s\S]*?(?:--\s*>|$)/gim
 
 /** Any text that looks like a requirement marker, well-formed or not. */
 const REQUIRE_MARKER_LOOSE = /swarm:requires/gi
@@ -298,7 +307,7 @@ function capabilityBlock(names, options = {}) {
     return [
       '## Host capabilities — not probed',
       '',
-      'This host exposed no tool registry while this prompt was assembled, so the swarm surfaces could not be probed. Nothing was filtered out: every bullet is kept, and a surface named in one of them may still be absent. Verify a surface before you plan around it.',
+      'The tool registry listed no tools for this agent while this prompt was assembled, so the swarm surfaces could not be probed. Nothing was filtered out: every bullet is kept, and a surface named in one of them may still be absent. Verify a surface before you plan around it.',
     ].join('\n')
   }
   const present = (tool) => names.includes(tool)
@@ -320,19 +329,34 @@ function capabilityBlock(names, options = {}) {
   // The absent line is only worth printing when something is actually missing;
   // a host that offers every probed surface gets the plain list.
   if (absent.length > 0) {
-    lines.push(`- **Absent in this session:** ${absent.map((tool) => `\`${tool}\``).join(' · ')} — do not plan around these.`)
+    lines.push(`- **Absent in this session:** ${absent.map((tool) => `\`${tool}\``).join(' · ')} — not in this agent's registry; do not plan around these.`)
   }
   if (options.command === true) {
     lines.push('- **`/swarm`** — print this block on demand, without spending a model turn')
   }
-  lines.push(`- **Tools visible to this agent:** ${names.length}`)
+  lines.push(`- **Tools this agent's registry lists:** ${names.length} — the registry's view of this scope; a listed tool can still be refused by the host's policy`)
   return [
     '## Host capabilities — probed live',
     '',
-    "Probed from this host's tool registry while this prompt was assembled. This list is the ground truth for this session: a surface that is listed is callable now, and a surface that is absent must not be planned around.",
+    "Probed from this host's tool registry while this prompt was assembled. This list is the ground truth for this session: a surface that is listed is registered for this agent now, and a surface that is absent must not be planned around.",
     '',
     ...lines,
   ].join('\n')
+}
+
+/**
+ * Bring a requirement marker that spans several lines onto one line.
+ *
+ * The gate works line by line, so a marker broken across lines would leave its
+ * tail behind as if it were prose. Collapsing the marker's whitespace keeps
+ * its tool list parseable — the ',' and '|' separators survive — and keeps the
+ * fragment out of the rendered prompt. A marker whose tool list cannot be read
+ * as tool names is then treated as unsatisfied, which drops its bullet.
+ * @param {string} text - the bundled markdown.
+ * @returns {string} the markdown with every marker on a single line.
+ */
+function collapseMarkers(text) {
+  return text.replace(/<!--\s*swarm:requires[\s\S]*?--\s*>/gi, (marker) => marker.replace(/\s+/g, ' '))
 }
 
 /**
@@ -342,11 +366,14 @@ function capabilityBlock(names, options = {}) {
  */
 function referencedTools(raw) {
   const tools = []
-  for (const marker of raw.matchAll(REQUIRE_MARKER)) {
+  for (const marker of collapseMarkers(raw).matchAll(REQUIRE_MARKER)) {
     for (const group of marker[1].split(',')) {
       for (const tool of group.split('|')) {
         const name = tool.trim()
-        if (name.length > 0 && !tools.includes(name)) tools.push(name)
+        // A name with whitespace inside it is not a tool name; it is a
+        // hand-edited marker, and the absent list must not carry it.
+        if (name.length === 0 || /\s/.test(name) || tools.includes(name)) continue
+        tools.push(name)
       }
     }
   }
@@ -401,7 +428,7 @@ export function renderPrompt(raw, names, options = {}) {
   let text = raw
   if (probed !== undefined) {
     const kept = []
-    for (const line of text.split('\n')) {
+    for (const line of collapseMarkers(text).split('\n')) {
       if (!isLineSatisfied(line, probed)) continue
       kept.push(line)
     }
@@ -473,6 +500,42 @@ function optionalService(ctx, key) {
 }
 
 /**
+ * Run a registration as soon as the host exposes a service — and not before.
+ *
+ * The services behind the swarm primitives live in their own plugins, and a
+ * plugin applied while the host is still booting can find them absent for a
+ * moment. Sampling availability once would drop the primitive for the rest of
+ * the session, so the registration is bound to the service instead: a child
+ * fiber that the host starts as soon as the service resolves, and that never
+ * starts on a host that does not provide it.
+ *
+ * A host without ctx.inject keeps the older behaviour: register now when the
+ * service is already there, and do nothing when it is not.
+ * @param {object} ctx - the plugin context.
+ * @param {string} service - the service key to wait for.
+ * @param {string} name - the name the waiting fiber carries in the host's log.
+ * @param {Function} register - the registration; it returns a disposer or undefined.
+ * @returns {void}
+ */
+function registerWhenAvailable(ctx, service, name, register) {
+  let inject
+  try {
+    inject = typeof ctx.inject === 'function' ? ctx.inject : undefined
+  } catch {
+    inject = undefined
+  }
+  if (inject !== undefined) {
+    const fiber = Object.defineProperty(function swarmWaitingFiber(childCtx) {
+      childCtx.effect(() => register(childCtx))
+    }, 'name', { value: name, configurable: true })
+    inject.call(ctx, [service], fiber)
+    return
+  }
+  if (optionalService(ctx, service) === undefined) return
+  ctx.effect(() => register(ctx))
+}
+
+/**
  * A text content block, the host's plain result form.
  * @param {string} text - the text.
  * @returns {{ type: string, text: string }} the block.
@@ -512,17 +575,21 @@ function projectTask(task) {
 }
 
 /**
- * Build the host-backed swarm tools.
+ * Build every host-backed swarm tool, whatever the host currently offers.
  *
  * Each tool is a pass-through to one host service and never keeps state of its
  * own: the worktree comes from the host's worktrees service, the board from
  * the agent teams service, and the child lanes from the subagents service. The
  * calling agent is the authority for all three, so a lane acts on its own
  * behalf and never on somebody else's.
+ *
+ * Availability is not decided here. The caller binds each definition to the
+ * service behind it, so a service the host provides later still yields its
+ * tool (see registerWhenAvailable).
  * @param {object} ctx - the plugin context.
  * @returns {object[]} the tool definitions, ready for the tool registry.
  */
-export function buildSwarmTools(ctx) {
+export function buildSwarmToolDefinitions(ctx) {
   /**
    * The host's worktrees service.
    * @returns {object} the service.
@@ -647,7 +714,7 @@ export function buildSwarmTools(ctx) {
     throw new Error('This session is not a team member, and no ancestor of it is recognised as one, so the board cannot be read from here. Ask the Coordinator for the task text.')
   }
 
-  return [
+  const definitions = [
     {
       name: 'swarm_worktree',
       description:
@@ -918,7 +985,24 @@ export function buildSwarmTools(ctx) {
         throw new Error(`Unknown action "${action}". Use list, steer or stop.`)
       },
     },
-  ].filter((definition) => {
+  ]
+
+  return definitions
+}
+
+/**
+ * Build the swarm tools this host offers right now.
+ *
+ * A tool whose backing service the host does not expose is left out. The
+ * plugin itself does not use this snapshot: it binds each definition to its
+ * service and waits for that service (see registerWhenAvailable). This filter
+ * answers the question "what would this host take right now", which is what a
+ * probe or a test wants.
+ * @param {object} ctx - the plugin context.
+ * @returns {object[]} the tool definitions whose backing service is present.
+ */
+export function buildSwarmTools(ctx) {
+  return buildSwarmToolDefinitions(ctx).filter((definition) => {
     const service = SWARM_TOOL_SERVICES[definition.name]
     return service === undefined || optionalService(ctx, service) !== undefined
   })
@@ -974,28 +1058,26 @@ export function apply(ctx) {
   // The host-backed swarm primitives. They are registered globally, so every
   // lane — the Coordinator, a native teammate, a delegated worker — reaches
   // the host's own worktree, board and child lanes through one call.
+  //
+  // Each primitive waits for the service behind it instead of sampling
+  // availability once: a host that provides that service after this plugin was
+  // applied still registers the tool, and a host that never provides it never
+  // registers it at all.
   const tools = toolService(ctx)
   if (tools !== undefined) {
-    ctx.effect(() => {
-      const disposers = []
-      for (const definition of buildSwarmTools(ctx)) {
+    for (const definition of buildSwarmToolDefinitions(ctx)) {
+      const service = SWARM_TOOL_SERVICES[definition.name]
+      if (service === undefined) continue
+      registerWhenAvailable(ctx, service, definition.name, () => {
         try {
           const disposer = tools.register(definition)
-          if (typeof disposer === 'function') disposers.push(disposer)
+          return typeof disposer === 'function' ? disposer : undefined
         } catch {
           // One host that refuses a tool must not skip the others.
+          return undefined
         }
-      }
-      return () => {
-        for (const disposer of disposers.reverse()) {
-          try {
-            disposer()
-          } catch {
-            // A disposer that fails must not block the others.
-          }
-        }
-      }
-    })
+      })
+    }
   }
 
   ctx.effect(() => ctx.systemPrompt.section({
@@ -1018,44 +1100,44 @@ export function apply(ctx) {
     },
   }))
 
-  let commands
-  try {
-    commands = typeof ctx.get === 'function' ? ctx.get('commands') : undefined
-  } catch {
-    commands = undefined
-  }
-  if (commands !== undefined) {
-    ctx.effect(() => {
-      try {
-        const disposer = commands.register({
-          name: 'swarm',
-          description: "Report what the swarm workflow can do in this session: the live delegation and coordination surfaces, and how to run a swarm.",
-          input: { hint: 'swarm' },
-          handler: (invocation) => {
-            const names = probeToolNames(ctx, { agent: invocation.agent })
-            if (names === undefined) {
-              return { kind: 'error', text: 'The swarm workflow is active, but this host exposes no tool registry to probe.' }
-            }
-            // The referenced set names every tool the prompts gate on, so a
-            // marker whose tool this host lacks is reported here too.
-            const referenced = [
-              ...referencedTools(readText(COORDINATOR_PROMPT)),
-              ...referencedTools(readText(WORKER_PROMPT)),
-            ]
-            const block = capabilityBlock(names, { referenced })
-            return {
-              kind: 'success',
-              text: `${block}\n\nThe Coordinator drives the swarm: open a session goal, give every parallel lane its own files, and delegate with the surfaces listed above. The \`swarm-engineering\` skill carries the role methods — Developer, Tester, Reviewer.`,
-            }
-          },
-        })
-        commandRegistered = true
-        return typeof disposer === 'function' ? disposer : undefined
-      } catch {
-        // A host that refuses the command must not break the prompt.
-        commandRegistered = false
-        return undefined
-      }
-    })
-  }
+  // The `/swarm` command prints the live block on demand. It waits for the
+  // host's command registry the same way the primitives wait for their
+  // services, so a host that provides the registry later still gets the
+  // command — and the prompt only advertises `/swarm` once it is registered.
+  registerWhenAvailable(ctx, 'commands', 'swarm-command', (childCtx) => {
+    const commands = optionalService(childCtx, 'commands')
+    if (commands === undefined) return undefined
+    try {
+      const disposer = commands.register({
+        name: 'swarm',
+        description: "Report what the swarm workflow can do in this session: the live delegation and coordination surfaces, and how to run a swarm.",
+        input: { hint: 'swarm' },
+        handler: (invocation) => {
+          const names = probeToolNames(ctx, { agent: invocation.agent })
+          if (names === undefined) {
+            return { kind: 'error', text: 'The swarm workflow is active, but this host exposes no tool registry to probe.' }
+          }
+          // The referenced set names every tool the prompts gate on, so a
+          // marker whose tool this host lacks is reported here too.
+          const referenced = [
+            ...referencedTools(readText(COORDINATOR_PROMPT)),
+            ...referencedTools(readText(WORKER_PROMPT)),
+          ]
+          // The command is registered by definition here, so the block it
+          // prints is the block the prompt shows — including the `/swarm` line.
+          const block = capabilityBlock(names, { referenced, command: true })
+          return {
+            kind: 'success',
+            text: `${block}\n\nThe Coordinator drives the swarm: open a session goal, give every parallel lane its own files, and delegate with the surfaces listed above. The \`swarm-engineering\` skill carries the role methods — Developer, Tester, Reviewer.`,
+          }
+        },
+      })
+      commandRegistered = true
+      return typeof disposer === 'function' ? disposer : undefined
+    } catch {
+      // A host that refuses the command must not break the prompt.
+      commandRegistered = false
+      return undefined
+    }
+  })
 }
