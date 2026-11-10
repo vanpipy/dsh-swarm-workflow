@@ -17,9 +17,16 @@ prompt**, and the `swarm-engineering` skill carries the role methods
 | `swarm_child` | lists, steers and stops the delegated child lanes |
 | `/swarm` | prints what the swarm can do in this session |
 
-The three tools are registered **only when the host exposes the backing
-service**. A surface this host lacks is dropped from the prompt and listed
-under "Absent in this session" rather than advertised.
+The table lists what the bundle ships. Each surface appears in a session only
+when the host provides the backing service behind it — `swarm_worktree` needs
+`worktrees`, `swarm_task` needs `agentTeams`, `swarm_child` needs `subagents`,
+and `/swarm` needs the host's command registry.
+
+The plugin waits for that service instead of sampling availability once: each
+primitive is registered when its service arrives, so a host that provides
+`agentTeams` (or `subagents`, or `worktrees`) after the plugin was applied
+still gets the tool. A surface the host never provides is dropped from the
+prompt and listed under "Absent in this session" rather than advertised.
 
 ## The workflow
 
@@ -99,13 +106,13 @@ move to a newer commit, publish it and run the install command again.
 ## Develop
 
 The repository is also the checkout you edit. To work on the plugin itself,
-link the checkout into a profile instead of installing it from GitHub:
+install the bundle from the local path instead of from GitHub:
 
 ```
 plugin_manager install_bundle   target=D:\project\dsh-plugins\swarm-workflow
 ```
 
-The profile then links the directory, so an edit is picked up after a
+The bundle is installed from that path, so an edit is picked up after a
 re-apply:
 
 ```
@@ -114,8 +121,8 @@ plugin_manager set_plugin   include:swarm-workflow   enabled=true
 ```
 
 Off then on is the live proof: the `swarm-engineering` skill leaves the skill
-catalog and comes back. That link is a development convenience — it is not
-the install route.
+catalog and comes back. The local path is a development convenience — it is
+not the install route.
 
 ## Uninstall and rename
 
