@@ -146,7 +146,23 @@ swarm-worker-prompt.md        the delegated worker prompt
 skills/swarm-engineering.md   the role methods
 cordis.patch.yml              the profile row (id: swarm-workflow)
 client.js, locale/, icon.svg  the Web-GUI side
+test/                         the suite that travels with the bundle
 ```
+
+## Tests
+
+```
+npm test
+```
+
+The runner starts every suite in its own process and exits non-zero when one
+fails. The three files under `test/` cover the prompt gating
+(`render-prompt.test.mjs`), the three primitives against stub host services
+(`swarm-tools.test.mjs`), and the registration timing (`gating.test.mjs`). The
+last one runs the same scenarios twice: against the host's real runtime when
+this machine has one, and against a local model of the host's service
+semantics (`test/lib/cordis-model.mjs`) when it does not — so the suite runs
+on a machine with no DSH host at all.
 
 ## Notes
 
