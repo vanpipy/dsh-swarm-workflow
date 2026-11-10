@@ -15,7 +15,7 @@ prompt**, and the `swarm-engineering` skill carries the role methods
 | `swarm_worktree` | gives a lane its own Git worktree |
 | `swarm_task` | reads and updates the shared team board |
 | `swarm_child` | lists, steers and stops the delegated child lanes |
-| `/swarm` | prints what the swarm can do in this session |
+| `/swarm` | prints what the swarm can do in this session (when the host has a command registry) |
 
 The table lists what the bundle ships. Each surface appears in a session only
 when the host provides the backing service behind it — `swarm_worktree` needs
