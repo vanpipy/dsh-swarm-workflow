@@ -13,7 +13,10 @@
     "./swarm-worker-prompt.md": "./swarm-worker-prompt.md",
     "./skills/*.md": "./skills/*.md"
   },
-  "files": ["index.js", "client.js", "cordis.patch.yml", "locale/*.json", "icon.svg", "swarm-prompt.md", "swarm-worker-prompt.md", "skills/*.md"],
+  "files": ["index.js", "client.js", "cordis.patch.yml", "locale/*.json", "icon.svg", "swarm-prompt.md", "swarm-worker-prompt.md", "skills/*.md", "test/"],
+  "scripts": {
+    "test": "node test/run.mjs"
+  },
   "dsh": {
     "bundle": { "patch": "./cordis.patch.yml" },
     "client": {
