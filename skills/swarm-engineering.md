@@ -3,7 +3,7 @@ name: swarm-engineering
 description: Engineering execution methods for Jcode Swarm workers. Defines bounded investigation, Developer implementation, Tester verification, Reviewer code review, role boundaries, handoffs, and evidence-based completion.
 ---
 
-<!-- Added by the dsh-swarm-workflow plugin: this file is the user's own skill text. Two deliberate exceptions: the bullet in the *Purpose* section below that points at the global execution policy (changed on the user's request, because `prompt-overlay.md` does not exist), and the tail of the file: the three sections *Role Dependencies and Execution Patterns*, *Review and Verification Termination* and *Stalling Detection and Recovery* are the USER's own prose relocated verbatim from the orchestration policy's matching sections, while *Coordinator Practice*, *Host facts — this runtime*, *Requirement Matching* and *Requirement handover* are the plugin's own rules. Each section sits behind its own marker comment. -->
+<!-- Added by the dsh-swarm-workflow plugin: this file is the user's own skill text. Two deliberate exceptions: the bullet in the *Purpose* section below that points at the global execution policy (changed on the user's request, because `prompt-overlay.md` does not exist), and the tail of the file: the three sections *Role Dependencies and Execution Patterns*, *Review and Verification Termination* and *Stalling Detection and Recovery* are the USER's own prose relocated verbatim from the orchestration policy's matching sections, while *Coordinator Practice*, *Host facts — this runtime*, *Requirement Matching* and *Requirement handover* are the plugin's own rules. Each section sits behind its own marker comment. The user's paste opened with two chat lines — "The swarm worker prompts I saw in plugin, did not update, why?" and "Here is the swarm enginnering" — which are chat text, not skill text, so they are not shipped. -->
 
 # Swarm Engineering Skill
 
@@ -478,7 +478,7 @@ When Skill availability or inheritance is uncertain:
 
 Workers must follow the actual runtime capabilities and tool restrictions of the active Jcode version.
 
-<!-- Added by the dsh-swarm-workflow plugin: the Coordinator-side methods the orchestration policy no longer carries inline. The three sections *Role Dependencies and Execution Patterns*, *Review and Verification Termination* and *Stalling Detection and Recovery* are the USER's own prose — relocated verbatim from the orchestration policy's matching sections — and the sections after them are the plugin's own rules. A worker needs its own role section (*Developer Role*, *Tester Role*, *Reviewer Role*), the shared contract in *Assignment and Reporting Contract*, and the requirement rules in *Requirement Matching* and *Requirement handover*. -->
+<!-- Added by the dsh-swarm-workflow plugin: the Coordinator-side methods the orchestration policy no longer carries inline. The three sections *Role Dependencies and Execution Patterns*, *Review and Verification Termination* and *Stalling Detection and Recovery* are the USER's own prose — relocated from the orchestration policy's matching sections — with new section numbers: the policy's section 6 is section 11 here, the policy's section 9 is section 12 and the policy's section 10 is section 13; the prose is verbatim, the headings are renumbered. The sections after them are the plugin's own rules. A worker needs its own role section (*Developer Role*, *Tester Role*, *Reviewer Role*), the shared contract in *Assignment and Reporting Contract*, and the requirement rules in *Requirement Matching* and *Requirement handover*. -->
 
 ## 11. Role Dependencies and Execution Patterns
 
@@ -640,11 +640,12 @@ When the work carries requirements, they live in a FILE, not in the chat. The Co
 - The file lives in the project the swarm works on, under `.swarm/requirements/`, one file per work item: `.swarm/requirements/<work-item>.md`.
 - Each requirement is one block, carrying the requirement, the observable check that proves it, and its source:
 
-  ```
-  <the requirement>
-      check: <what proves it>
-      source: <the assignment | path:line | the behaviour that must not change>
-  ```
+```
+### <ID> — <short title>
+<the requirement>
+check: <what proves it>
+source: <the assignment | path:line | the behaviour that must not change>
+```
 
 - The brief names the file and the requirements it covers. It does not repeat the requirement text: a copy in a chat message is what drifts.
 - The board entry carries the same path, for the same reason.
