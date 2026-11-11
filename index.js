@@ -93,9 +93,10 @@ const HEADING = /^(#{1,6})\s+(.+)$/
 /**
  * The number a heading may carry in front of its text.
  *
- * The shipped files number their sections ("12. ", "12.4 ", "7A. "), and that
+ * The shipped files number their sections ("12. ", "12.4 ", "7.0 "), and that
  * number is not part of the name a caller asks for, so it is stripped before
- * two headings are compared.
+ * two headings are compared. A trailing letter is tolerated too ("7A. "), so a
+ * file that renumbers itself keeps parsing.
  */
 const HEADING_NUMBER = /^\d+(?:\.\d+)*[A-Za-z]?\.?\s+/
 
