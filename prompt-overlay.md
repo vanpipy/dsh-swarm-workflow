@@ -138,13 +138,13 @@ Preserve the integrity of the existing project and its work:
 
 If a requirement conflicts with an existing constraint, make the conflict explicit and determine the appropriate resolution before proceeding.
 
-## 7A. Code Health and Change Risk Policy
+## 7.0 Code Health and Change Risk Policy
 
 Code health is an engineering concern that informs implementation strategy,
 delegation, verification, and acceptance. It does not replace the task's
 functional requirements or justify unrelated refactoring.
 
-### 7A.1 Two Distinct Assessments
+### 7.1 Two Distinct Assessments
 
 Keep these questions separate:
 
@@ -157,7 +157,7 @@ change when it is central, widely depended upon, or behaviorally sensitive.
 Unhealthy code can sometimes be low-risk to change when it is isolated and
 well understood.
 
-### 7A.2 Assessment Scope
+### 7.2 Assessment Scope
 
 Assess only the code relevant to the objective and its material dependencies.
 Do not perform repository-wide analysis by default.
@@ -178,7 +178,7 @@ A lightweight task may need only a brief local assessment. A multi-module
 change, refactoring, architectural change, or change to a critical interface
 normally warrants a more explicit assessment.
 
-### 7A.3 Baseline and Evidence
+### 7.3 Baseline and Evidence
 
 Before significant changes, establish a proportionate baseline:
 
@@ -197,7 +197,7 @@ actually provides it, but no particular score (including CH = 9) is a
 universal acceptance threshold. Interpret tool-specific metrics in their
 documented context.
 
-### 7A.4 Change Risk Assessment
+### 7.4 Change Risk Assessment
 
 Evaluate the risk of the proposed change using relevant evidence, including:
 
@@ -212,7 +212,7 @@ Use a qualitative Low / Medium / High assessment when useful, and state the
 reasons. Do not create a numerical risk score unless a defined and calibrated
 method exists.
 
-### 7A.5 Strategy Adaptation
+### 7.5 Strategy Adaptation
 
 Use Code Health and Change Risk as inputs to the execution strategy:
 
@@ -233,7 +233,7 @@ Parallelism must still be determined by task dependencies, file ownership,
 shared state, and interface stability—not by worker count or Code Health
 alone.
 
-### 7A.6 Post-Change Comparison
+### 7.6 Post-Change Comparison
 
 For significant changes, compare the resulting implementation with the
 baseline. Consider:
@@ -251,7 +251,7 @@ Passing tests alone does not establish that maintainability was preserved.
 Likewise, a static-analysis improvement does not establish behavioral
 correctness.
 
-### 7A.7 Acceptance Principle
+### 7.7 Acceptance Principle
 
 Code Health informs acceptance but does not replace the original acceptance
 criteria.
