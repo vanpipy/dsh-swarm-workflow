@@ -1,0 +1,9 @@
+# The three files the user owns are shipped byte for byte.
+#
+# Without this, git's autocrlf conversion rewrites their line endings on a
+# checkout: a fresh clone of this bundle on a Windows host turns them into CRLF
+# and the bundle no longer carries the user's text verbatim. Marking them
+# -text tells git to store the bytes as they are and restore them as they are.
+prompt-overlay.md           -text
+swarm-prompt.md             -text
+skills/swarm-engineering.md -text
