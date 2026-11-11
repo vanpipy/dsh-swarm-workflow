@@ -1,9 +1,29 @@
 # dsh-swarm-workflow
 
 A DSH plugin that turns a session into a small engineering swarm: the main
-agent becomes the **Coordinator**, every delegated agent gets a **worker
-prompt**, and the `swarm-engineering` skill carries the role methods
-(Developer, Tester, Reviewer) the swarm runs on.
+agent becomes the **Coordinator**, every delegated agent gets a scoped view of
+the execution policy, and the `swarm-engineering` skill carries the role
+methods (Developer, Tester, Reviewer) the swarm runs on.
+
+## The boundary
+
+The bundle ships the user's own text **byte for byte** and keeps every
+host-specific fact in one separate file. Nothing in the shipped text is
+rewritten for this host, and no host fact is written into the shipped text.
+
+| File | Owner | What it is |
+| --- | --- | --- |
+| `prompt-overlay.md` | the user | the global execution policy |
+| `swarm-prompt.md` | the user | the delegation briefing: what to delegate, what a brief must carry, where a requirement lives |
+| `skills/swarm-engineering.md` | the user | the role methods, the assignment contract, requirement matching and handover |
+| `runtime-note.md` | the plugin | the only prose this plugin wrote: the host identity, the Jcode-to-DeepSeek-Harness surface map, the requirement carrier, the verification path, and the live capabilities of the session |
+
+`runtime-note.md` is written in scope blocks, marked
+`<!-- swarm:note coordinator worker skill -->`. The plugin prepends the blocks
+that match the audience it is assembling a prompt for and never rewrites the
+text it composes. The marker that gates a bullet on a tool
+(`<!-- swarm:requires subagent -->`) exists only in that file, so the shipped
+text stays free of host mechanics.
 
 ## What it adds
 
@@ -28,14 +48,38 @@ primitive is registered when its service arrives, so a host that provides
 still gets the tool. A surface the host never provides is dropped from the
 prompt and listed under "Absent in this session" rather than advertised.
 
+## How a prompt is composed
+
+The same shipped text produces three views, and every view is assembled from
+the files on disk at prompt-assembly time:
+
+* **Coordinator** — the runtime note's coordinator blocks, the whole execution
+  policy (sections 1 to 12), and the whole delegation briefing. Section 12,
+  Swarm Orchestration, is the Coordinator's operating manual.
+* **Worker** — the runtime note's worker blocks, sections 1 to 11 of the
+  execution policy (the policy governs delegated work as well as direct
+  work), and the three sections of the skill a lane cannot infer from its
+  assignment alone: the assignment and reporting contract, requirement
+  matching, and requirement handover.
+* **Skill** — the runtime note's skill blocks and the skill text itself, with
+  the host note in front of the registered description.
+
+The live capability block is generated from the session's own tool registry and
+is written into the prompt in place of the marker in the runtime note, so the
+prompt states only the surfaces this session can actually call. A bullet whose
+tool is missing is dropped rather than shown, and a section the shipped file no
+longer contains is replaced by a visible notice rather than dropped silently.
+
 ## The workflow
 
 Understand → Investigate → Design → Implement → Verify → Integrate and accept
 
 1. **Understand** — the Coordinator writes the objective, the scope and the
-   acceptance criteria, and puts the requirement text in
-   `.swarm/requirements/<work-item>.md`: one block per requirement, each with
-   the requirement, the observable check that proves it, and its source.
+   acceptance criteria, and puts each requirement in the task it creates on
+   the shared board: one block per requirement, each with the requirement, the
+   observable check that proves it, and its source. The same requirement set is
+   written to `.swarm/requirements/<work-item>.md` in the workspace of the work
+   item, so the next session in that workspace finds it.
 2. **Investigate** — one bounded question, one lane, evidence before
    conclusions.
 3. **Design** — the interface and the work boundaries before anything is built.
@@ -54,6 +98,14 @@ Understand → Investigate → Design → Implement → Verify → Integrate and
    acceptance until it is checked, or until an explicit waiver is recorded in
    the ledger row.
 
+**Where the work is written down.** Everything a work item produces is written
+into the `.swarm` directory of the workspace it targets:
+`.swarm/requirements/<work-item>.md` (the requirement set),
+`.swarm/decisions/<YYYY-MM-DD>-<slug>.md` (a decision that changes the work
+item) and `.swarm/reports/<work-item>-<lane>.md` (what a lane reported). The
+requirement file and the board task carry the same requirement; when they
+disagree, the file wins and the disagreement is reported.
+
 **Roles.** *Developer* implements and writes the implementation smoke test.
 *Tester* derives the checks from the requirement and owns one test file per
 function. *Reviewer* reviews independently and produces the requirement
@@ -63,6 +115,11 @@ verdict table. *Coordinator* plans, dispatches, integrates and accepts.
 evidence and where it lives, the findings, the assumptions and their
 confidence, any material unresolved question, the recommended next action,
 and whether the exit criteria are satisfied.
+
+**Independent verification.** This host has no native review or judge command,
+so the Coordinator reviews its own diff and states what it verified, or spends
+a Reviewer lane — one verification run at acceptance, and a second one is the
+user's to start.
 
 ## Install
 
@@ -109,7 +166,7 @@ The repository is also the checkout you edit. To work on the plugin itself,
 install the bundle from the local path instead of from GitHub:
 
 ```
-plugin_manager install_bundle   target=D:\project\dsh-plugins\swarm-workflow
+plugin_manager install_bundle   target=D:\project\dsh-plugins\dsh-swarm-workflow
 ```
 
 The bundle is installed from that path, so an edit is picked up after a
@@ -141,9 +198,10 @@ not the install route.
 
 ```
 index.js                      the plugin: prompt section, skill, tools, /swarm command
-swarm-prompt.md               the Coordinator prompt
-swarm-worker-prompt.md        the delegated worker prompt
-skills/swarm-engineering.md   the role methods
+prompt-overlay.md             the global execution policy (the user's text, verbatim)
+swarm-prompt.md               the delegation briefing (the user's text, verbatim)
+runtime-note.md               the host note: the only prose the plugin wrote
+skills/swarm-engineering.md   the role methods (the user's text, verbatim)
 cordis.patch.yml              the profile row (id: swarm-workflow)
 client.js, locale/, icon.svg  the Web-GUI side
 test/                         the suite that travels with the bundle
@@ -156,22 +214,26 @@ npm test
 ```
 
 The runner starts every suite in its own process and exits non-zero when one
-fails. The three files under `test/` cover the prompt gating
+fails. The suites under `test/` cover the prompt composition and gating
 (`render-prompt.test.mjs`), the three primitives against stub host services
-(`swarm-tools.test.mjs`), and the registration timing (`gating.test.mjs`). The
-last one runs the same scenarios twice: against the host's real runtime when
-this machine has one, and against a local model of the host's service
-semantics (`test/lib/cordis-model.mjs`) when it does not — so the suite runs
-on a machine with no DSH host at all.
+(`swarm-tools.test.mjs`), the parsing and registration timing (`gating.test.mjs`),
+the verbatim guarantee — that the shipped text still carries the user's
+own anchors and none of the host's (`verbatim.test.mjs`) — and the skill
+re-registration stamp, which has to cover both the skill file and the runtime
+note (`skill-stamp.test.mjs`). The gating suite runs
+the same scenarios twice: against the host's real runtime when this machine
+has one, and against a local model of the host's service semantics
+(`test/lib/cordis-model.mjs`) when it does not — so the suite runs on a
+machine with no DSH host at all.
 
 ## Notes
 
 * The plugin describes the **live** host. The prompt is rendered per
   assembly from the bundled files and the host's tool registry, and a bullet
   whose tool is missing is dropped instead of shown. Do not hand-write host
-  facts into the markdown.
+  facts into the shipped text.
 * `swarm_worktree` appears only where the host exposes the worktree service
   (the `worktrees` bundle). Where it is absent, the prompt says so.
-* The orchestration policy and the skill text are shipped verbatim; the
-  host-specific facts live in the plugin's own sections, below the boundary
-  marker in each file.
+* The execution policy, the delegation briefing and the skill text are shipped
+  verbatim. Every host-specific fact lives in `runtime-note.md`, and the plugin
+  composes a view of the shipped text instead of editing it.

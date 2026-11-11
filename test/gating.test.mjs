@@ -4,6 +4,8 @@
 // (see lib/host-cordis.mjs) and always against the local model in
 // lib/cordis-model.mjs, so the bundle's registration logic is tested wherever
 // the suite runs. Read-only: nothing is written outside this directory.
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import * as bundle from '../index.js'
 import { ModelContext } from './lib/cordis-model.mjs'
 import { loadHostCordis } from './lib/host-cordis.mjs'
@@ -14,6 +16,34 @@ function check(label, actual, expected) {
   const ok = JSON.stringify(actual) === JSON.stringify(expected)
   if (!ok) failures += 1
   console.log(`${ok ? 'PASS' : 'FAIL'} ${label} -> ${JSON.stringify(actual)}${ok ? '' : ` (expected ${JSON.stringify(expected)})`}`)
+}
+
+/**
+ * Run one check whose value is computed by a function, so a missing export
+ * or a thrown error fails the check instead of the whole suite.
+ * @param {string} label - what the check proves.
+ * @param {Function} compute - returns the value to compare.
+ * @param {any} expected - the expected value.
+ */
+function checkResult(label, compute, expected) {
+  let actual
+  try {
+    actual = compute()
+  } catch (error) {
+    failures += 1
+    console.log(`FAIL ${label} -> threw: ${error.message}`)
+    return
+  }
+  check(label, actual, expected)
+}
+
+/**
+ * Read one file of the bundle.
+ * @param {string} relative - the path relative to the bundle root.
+ * @returns {string} the file content.
+ */
+function readBundle(relative) {
+  return readFileSync(fileURLToPath(new URL(`../${relative}`, import.meta.url)), 'utf8')
 }
 
 /**
@@ -157,6 +187,127 @@ async function scenarios(makeHost, label) {
   const rendered = bundle.renderPrompt(raw, ['subagent'], {})
   check('F4b an unclosed marker does not delete the document', rendered.includes('second line stays'), true)
   check('F4b an unclosed marker leaves no marker text', rendered.includes('swarm:requires'), false)
+}
+
+// --- V1: parseRuntimeNote reads the scope blocks of the host note -----------
+// The plugin ships the user's text and keeps every host-specific fact in
+// runtime-note.md, in blocks that say who they are for.
+{
+  const note = readBundle('runtime-note.md')
+  const marker = /^\s*<!--\s*swarm:note\s+([a-z\s]+)-->\s*$/gm
+  const markers = [...note.matchAll(marker)]
+
+  checkResult('V1 the host note has scope blocks', () => markers.length > 0, true)
+  checkResult('V1 every scope block in the file becomes a block', () => bundle.parseRuntimeNote(note).length, markers.length)
+  checkResult('V1 the blocks come back in file order', () => {
+    const blocks = bundle.parseRuntimeNote(note)
+    const positions = blocks.map((block) => {
+      const firstLine = block.text.split('\n').map((line) => line.trim()).find((line) => line !== '')
+      return note.indexOf(firstLine)
+    })
+    return positions.every((position, index) =>
+      position >= 0 && (index === 0 || position > positions[index - 1]))
+  }, true)
+  checkResult('V1 the first block is scoped for every audience', () => {
+    const scopes = bundle.parseRuntimeNote(note)[0].scopes
+    return ['coordinator', 'worker', 'skill'].every((scope) => scopes.includes(scope))
+  }, true)
+  checkResult('V1 one block is scoped for the coordinator only', () =>
+    bundle.parseRuntimeNote(note).some((block) => block.scopes.length === 1 && block.scopes[0] === 'coordinator'), true)
+  checkResult('V1 one block is scoped for the worker only', () =>
+    bundle.parseRuntimeNote(note).some((block) => block.scopes.length === 1 && block.scopes[0] === 'worker'), true)
+  checkResult('V1 one block is scoped for the skill only', () =>
+    bundle.parseRuntimeNote(note).some((block) => block.scopes.length === 1 && block.scopes[0] === 'skill'), true)
+  checkResult('V1 the text before the first marker is not a block', () =>
+    bundle.parseRuntimeNote(note).every((block) => !block.text.includes('This file is the boundary')), true)
+  checkResult('V1 no block carries a marker line', () =>
+    bundle.parseRuntimeNote(note).every((block) => !block.text.includes('swarm:note')), true)
+}
+
+// --- V2: parseRuntimeNote on a small inline fixture --------------------------
+{
+  // The marker regex needs at least one whitespace character after
+  // `swarm:note`, and the capture group cannot be empty, so the marker with no
+  // words carries two spaces. Both the strict and the lenient reading of the
+  // marker agree on it: a block with no scope words.
+  const fixture = [
+    '<!-- a leading comment that is not a block -->',
+    '',
+    '<!-- swarm:note coordinator worker -->',
+    'first block, first line',
+    'first block, second line',
+    '',
+    '<!-- swarm:note skill -->',
+    'second block',
+    '',
+    '<!-- swarm:note  -->',
+    'third block',
+    'the last line of the file',
+  ].join('\n')
+
+  checkResult('V2 the fixture yields three blocks', () => bundle.parseRuntimeNote(fixture).length, 3)
+  checkResult('V2 a two-word marker yields both scopes', () => bundle.parseRuntimeNote(fixture)[0].scopes, ['coordinator', 'worker'])
+  checkResult('V2 the first block carries its own text', () => {
+    const text = bundle.parseRuntimeNote(fixture)[0].text
+    return text.includes('first block, first line') && text.includes('first block, second line')
+  }, true)
+  checkResult('V2 the second block is scoped skill only', () => bundle.parseRuntimeNote(fixture)[1].scopes, ['skill'])
+  checkResult('V2 a block stops before the next marker', () =>
+    bundle.parseRuntimeNote(fixture)[1].text.includes('second block') &&
+    !bundle.parseRuntimeNote(fixture)[1].text.includes('first block'), true)
+  checkResult('V2 a marker with no words yields an empty scope list', () => bundle.parseRuntimeNote(fixture)[2].scopes, [])
+  checkResult('V2 the last block runs to the end of the file', () =>
+    bundle.parseRuntimeNote(fixture)[2].text.includes('the last line of the file'), true)
+  checkResult('V2 the leading comment is not a block', () =>
+    bundle.parseRuntimeNote(fixture).every((block) => !block.text.includes('a leading comment')), true)
+}
+
+// --- V3: extractSection takes one heading section, verbatim ------------------
+{
+  const overlay = readBundle('prompt-overlay.md')
+  const skill = readBundle('skills/swarm-engineering.md')
+
+  checkResult('V3 a section starts with its own heading', () =>
+    bundle.extractSection(skill, '13. Requirement Handover').startsWith('## 13. Requirement Handover'), true)
+  checkResult('V3 a section carries the user prose under it', () =>
+    bundle.extractSection(skill, '13. Requirement Handover').includes('A worker cites the requirement as'), true)
+  checkResult('V3 a section stops before the next section of the same level', () =>
+    !bundle.extractSection(skill, '13. Requirement Handover').includes('## 14. Native Verification Surfaces'), true)
+  checkResult('V3 the assignment contract stops before definition of success', () =>
+    !bundle.extractSection(skill, '8. Assignment and Reporting Contract').includes('## 9. Definition of Success'), true)
+  checkResult('V3 the assignment contract carries its own body', () =>
+    bundle.extractSection(skill, '8. Assignment and Reporting Contract').includes('Each worker must understand the assignment before execution'), true)
+  checkResult('V3 the orchestration section starts where it was asked for', () => {
+    const section = bundle.extractSection(overlay, '12. Swarm Orchestration')
+    return section.startsWith('## 12. Swarm Orchestration') && !section.includes('## 1. Mission and Ownership')
+  }, true)
+  checkResult('V3 the orchestration section keeps its subsections', () =>
+    bundle.extractSection(overlay, '12. Swarm Orchestration').includes('### 12.5 Assignment Brief'), true)
+  checkResult('V3 a section of the same level ends the one before it', () => {
+    const section = bundle.extractSection(skill, '2. Common Engineering Principles')
+    return !section.includes('## 2.7') && section.includes('### 2.1 Work Within the Assignment')
+  }, true)
+  checkResult('V3 a heading that is not there yields null', () =>
+    bundle.extractSection(skill, '99. No Such Section'), null)
+  checkResult('V3 a title is matched without regard to case', () =>
+    bundle.extractSection(skill, '13. requirement handover').startsWith('## 13. Requirement Handover'), true)
+  checkResult('V3 a title is matched with the number prefix stripped', () =>
+    bundle.extractSection(skill, 'Requirement Handover').startsWith('## 13. Requirement Handover'), true)
+}
+
+// --- V4: extractUntil takes everything before the heading --------------------
+{
+  const overlay = readBundle('prompt-overlay.md')
+  const skill = readBundle('skills/swarm-engineering.md')
+
+  checkResult('V4 everything before the heading is kept', () =>
+    bundle.extractUntil(overlay, '12. Swarm Orchestration').includes('## 11. Policy and Tool Boundaries'), true)
+  checkResult('V4 the heading itself is not included', () =>
+    !bundle.extractUntil(overlay, '12. Swarm Orchestration').includes('## 12. Swarm Orchestration'), true)
+  checkResult('V4 the text before the first heading is kept', () =>
+    bundle.extractUntil(overlay, '12. Swarm Orchestration').includes('# Global Execution Policy'), true)
+  checkResult('V4 a heading that is not there yields null', () =>
+    bundle.extractUntil(skill, '99. No Such Section'), null)
 }
 
 const host = await loadHostCordis()

@@ -275,6 +275,137 @@ check('a host without any of the three services builds no swarm tool',
   check('a host without the teams service has no board tool', noTeams.length === 0)
 }
 
+// --- the lossless-JSON rule --------------------------------------------------
+//
+// The host snapshots a tool result before it hands it on, and it rejects the
+// WHOLE result when the snapshot is not lossless JSON: an undefined property
+// value is dropped by JSON.stringify, so the snapshot comes back undefined and
+// the host fails the call with "value is not lossless JSON". The task view the
+// host publishes leaves ownerName undefined for a task nobody owns, so a board
+// that holds one unowned task used to break swarm_task outright.
+
+/**
+ * Every path in a value that carries an undefined.
+ * @param {unknown} value - the value to walk.
+ * @param {string} [path] - the path walked so far.
+ * @returns {string[]} the paths that carry an undefined value.
+ */
+function undefinedPaths(value, path = 'result') {
+  if (value === undefined) return [path]
+  if (Array.isArray(value)) return value.flatMap((entry, index) => undefinedPaths(entry, `${path}[${index}]`))
+  if (value !== null && typeof value === 'object') {
+    return Object.entries(value).flatMap(([key, entry]) => undefinedPaths(entry, `${path}.${key}`))
+  }
+  return []
+}
+
+{
+  // The host's task view for a task nobody owns: every field but ownerName is
+  // filled, and ownerName is undefined.
+  const unowned = {
+    id: 'task-9',
+    revision: 1,
+    subject: 'A task nobody owns',
+    description: 'The host leaves ownerName undefined for it.',
+    status: 'pending',
+    blockedBy: [],
+    writeScopes: [],
+    ownerName: undefined,
+    ready: true,
+    writeScopeWarnings: [],
+  }
+  const unownedTeams = {
+    tryMembership: (candidate) => (candidate === agent ? { role: 'lead' } : undefined),
+    listTasks: () => [unowned],
+    getTask: (caller, id) => {
+      if (id !== unowned.id) throw new Error(`no task ${id}`)
+      return unowned
+    },
+    updateTask: async () => { throw new Error('no update') },
+  }
+  const tools = buildSwarmTools(hostCtx({ agentTeams: unownedTeams }))
+  const boardTool = tool(tools, 'swarm_task')
+
+  const listed = await boardTool.execute({ action: 'list' }, { agent, signal })
+  check('an unowned task is listed', listed.tasks.length === 1 && listed.tasks[0].id === 'task-9', JSON.stringify(listed.tasks))
+  check('an unowned task carries no undefined value', undefinedPaths(listed).length === 0, undefinedPaths(listed).join(', '))
+  check('an unowned task is projected with an empty owner', listed.tasks[0].owner === '', JSON.stringify(listed.tasks[0].owner))
+
+  // A result that survives a JSON round trip is one the host can snapshot:
+  // JSON.stringify drops an undefined property, so a lost key is exactly the
+  // defect this block is about.
+  const roundTripped = JSON.parse(JSON.stringify(listed))
+  check('the board result survives a JSON round trip without losing a key',
+    Object.keys(roundTripped).join(',') === Object.keys(listed).join(',') &&
+    Object.keys(roundTripped.tasks[0]).join(',') === Object.keys(listed.tasks[0]).join(',') &&
+    JSON.stringify(roundTripped) === JSON.stringify(listed),
+    `${Object.keys(roundTripped.tasks[0]).join(',')} vs ${Object.keys(listed.tasks[0]).join(',')}`)
+  const declaredTaskKeys = Object.keys(boardTool.output.schema.properties.task.properties).sort().join(',')
+  const projectedTaskKeys = Object.keys(listed.tasks[0]).sort().join(',')
+  check('the projected task carries exactly the keys the output schema declares',
+    declaredTaskKeys === projectedTaskKeys, `${projectedTaskKeys} vs ${declaredTaskKeys}`)
+
+  const rendered = boardTool.output.render({}, listed)
+  check('an unowned task is rendered as unowned', rendered[0].text.includes('unowned'), rendered[0].text)
+
+  const got = await boardTool.execute({ action: 'get', task_id: 'task-9' }, { agent, signal })
+  check('a single unowned task carries no undefined value', undefinedPaths(got).length === 0, undefinedPaths(got).join(', '))
+  const renderedOne = boardTool.output.render({}, got)
+  check('a single unowned task is rendered as unowned', renderedOne[0].text.includes('owner: unowned'), renderedOne[0].text)
+}
+
+{
+  // The host's membership may name no role at all. The result must still
+  // carry a string, because an undefined value is what the host rejects.
+  const rolelessTeams = {
+    tryMembership: (candidate) => (candidate === agent ? {} : undefined),
+    listTasks: () => [],
+    getTask: () => { throw new Error('no task') },
+    updateTask: async () => ({ id: 'task-9', revision: 2, subject: 'A task nobody owns', description: '', status: 'in_progress', blockedBy: [], writeScopes: [], ownerName: 'lead', ready: true, writeScopeWarnings: [] }),
+  }
+  const tools = buildSwarmTools(hostCtx({ agentTeams: rolelessTeams }))
+  const boardTool = tool(tools, 'swarm_task')
+  const listed = await boardTool.execute({ action: 'list' }, { agent, signal })
+  check('a membership without a role yields an empty authorityRole', listed.authorityRole === '', JSON.stringify(listed.authorityRole))
+  check('a membership without a role yields no undefined value', undefinedPaths(listed).length === 0, undefinedPaths(listed).join(', '))
+  const claimed = await boardTool.execute({ action: 'claim', task_id: 'task-9', expected_revision: 1 }, { agent, signal })
+  check('a move by a membership without a role yields an empty authorityRole', claimed.authorityRole === '', JSON.stringify(claimed.authorityRole))
+  check('a move by a membership without a role yields no undefined value', undefinedPaths(claimed).length === 0, undefinedPaths(claimed).join(', '))
+}
+
+{
+  // The other two primitives carry the same hazard: the host's own view can
+  // leave a field empty, and the host rejects the whole result over it.
+  const tools = buildSwarmTools(hostCtx({
+    subagents: {
+      listChildren: async () => [{ id: undefined, mode: undefined, label: undefined, createdAt: undefined }],
+      sendMessage: async () => 'message-1',
+      interrupt: () => {},
+    },
+  }))
+  const listed = await tool(tools, 'swarm_child').execute({ action: 'list' }, { agent, signal })
+  check('a child lane with no fields carries no undefined value', undefinedPaths(listed).length === 0, undefinedPaths(listed).join(', '))
+  check('a child lane with no fields is projected with empty strings',
+    listed.children[0].id === '' && listed.children[0].mode === '', JSON.stringify(listed.children[0]))
+}
+
+{
+  // swarm_worktree has no service on this host, so the primitive cannot be
+  // exercised against the real one; it is audited here. A checkout the host
+  // gave no path for is reported as the failure it is, not as a success that
+  // carries an empty field.
+  const tools = buildSwarmTools(hostCtx({
+    worktrees: { create: async () => ({ branch: 'swarm/lane' }) },
+  }))
+  await checkThrows('swarm_worktree reports a host that returned no path',
+    () => tool(tools, 'swarm_worktree').execute({}, { agent, signal }), 'the host returned no path')
+  const thin = buildSwarmTools(hostCtx({
+    worktrees: { create: async () => ({ path: 'D:/worktrees/lane' }) },
+  }))
+  const created = await tool(thin, 'swarm_worktree').execute({}, { agent, signal })
+  check('a worktree with a thin host view carries no undefined value', undefinedPaths(created).length === 0, undefinedPaths(created).join(', '))
+}
+
 // --- swarm_child ------------------------------------------------------------
 
 {

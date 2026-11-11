@@ -3,8 +3,6 @@ name: swarm-engineering
 description: Engineering execution methods for Jcode Swarm workers. Defines bounded investigation, Developer implementation, Tester verification, Reviewer code review, role boundaries, handoffs, and evidence-based completion.
 ---
 
-<!-- Added by the dsh-swarm-workflow plugin: this file is the user's own skill text. Two deliberate exceptions: the bullet in the *Purpose* section below that points at the global execution policy (changed on the user's request, because `prompt-overlay.md` does not exist), and the tail of the file: the three sections *Role Dependencies and Execution Patterns*, *Review and Verification Termination* and *Stalling Detection and Recovery* are the USER's own prose relocated verbatim from the orchestration policy's matching sections, while *Coordinator Practice*, *Host facts — this runtime*, *Requirement Matching* and *Requirement handover* are the plugin's own rules. Each section sits behind its own marker comment. The user's paste opened with two chat lines — "The swarm worker prompts I saw in plugin, did not update, why?" and "Here is the swarm enginnering" — which are chat text, not skill text, so they are not shipped. -->
-
 # Swarm Engineering Skill
 
 ## 1. Purpose
@@ -19,8 +17,8 @@ It provides practical workflows and deliverable standards for:
 It also defines common engineering principles and role handoffs.
 
 This Skill does not replace:
-- The global execution policy — mission and ownership, goal-directed execution, evidence-driven investigation, verification and reporting.
-- Task decomposition, delegation, and orchestration rules in `swarm-prompt.md`.
+- Global execution policies in `prompt-overlay.md`, including the swarm orchestration policy in its section 12.
+- The `swarm` tool description in `swarm-prompt.md`, which carries model routing and the brief requirements every worker must be given.
 
 The assigned objective and scope take precedence over generic workflow preferences, subject to higher-priority instructions and constraints.
 
@@ -91,13 +89,128 @@ Respect existing project structure, interfaces, conventions, and user changes.
 
 Avoid unrelated modifications. Do not overwrite or revert changes outside the assignment.
 
+## 2.7 Code Health and Change Risk Assessment
+
+This procedure provides reusable engineering methods for assessing the
+maintainability of relevant code and the risk of a proposed change. It
+supports the Coordinator's policy in `prompt-overlay.md`; it does not replace
+the assignment's requirements or authorize unrelated refactoring.
+
+### 2.7.1 Keep the Assessments Separate
+
+- **Code Health** describes the maintainability and structural condition of
+  the relevant existing code.
+- **Change Risk** describes the risk introduced by the specific proposed
+  change.
+
+Do not infer one directly from the other. A healthy, central interface may
+be high-risk to modify. An unhealthy but isolated module may be relatively
+low-risk for a narrow change.
+
+### 2.7.2 Scope the Assessment
+
+Assess the target files and only those callers, consumers, tests, and
+dependencies that could materially affect the assigned objective.
+
+Consider these dimensions when relevant:
+
+| Dimension | Questions and evidence |
+| --- | --- |
+| Maintainability | Is the code understandable and cohesive? Are complexity, nesting, duplication, or code smells material to this change? |
+| Dependency structure | Which modules depend on the target? Are dependency direction, coupling, or circular dependencies relevant? |
+| Behavioral safety | What tests and behavioral contracts protect the affected behavior? What coverage or regression gaps are known? |
+| Change surface | Which interfaces, shared state, side effects, and downstream consumers may be affected? |
+
+Do not inspect the entire repository merely to complete this checklist. Mark
+irrelevant dimensions as not applicable and unavailable evidence as unknown.
+
+### 2.7.3 Collect Evidence
+
+Prefer evidence available in the repository and its established toolchain:
+
+- Actual source code, interfaces, and dependency relationships.
+- Existing tests and reproducible test results.
+- Coverage reports, when available and relevant.
+- Static analysis, linting, type checking, and complexity tools.
+- Git diff and relevant repository history.
+- Documented contracts and established project conventions.
+
+For each material finding, identify its source. Distinguish measured results,
+observed facts, inferences, and assumptions. Do not fabricate metrics or
+combine unrelated measurements into an uncalibrated score.
+
+A CodeScene CodeHealth score may be reported if the project actually uses
+CodeScene. Its thresholds are tool- and context-specific; do not treat CH = 9
+as a universal rule.
+
+### 2.7.4 Assess Change Risk
+
+Consider the specific change's:
+
+- Affected module count and dependency reach.
+- Public interface or compatibility impact.
+- Shared mutable state and side-effect surface.
+- Behavioral sensitivity and failure consequences.
+- Test and regression protection.
+- Unresolved uncertainty about existing behavior.
+
+Use Low, Medium, or High only when that classification helps the decision.
+State the evidence and reasons. Do not invent a numerical risk formula.
+
+### 2.7.5 Adapt the Work
+
+The assessment may inform:
+
+- Whether work should be direct, delegated, parallel, or sequential.
+- Worker boundaries and file ownership.
+- Whether an investigation or behavioral baseline is needed first.
+- The required test depth and review method.
+- Whether a human decision is needed before implementation.
+
+High risk does not automatically prohibit a change. It calls for proportionate
+guardrails. Do not create a separate assessment worker unless the assessment
+itself is a bounded deliverable that materially unblocks the task.
+
+### 2.7.6 Compare Before and After
+
+For significant changes, compare relevant evidence with the baseline:
+
+- Tests and observed behavior.
+- Complexity, duplication, and code-smell findings.
+- Dependencies, interfaces, and affected consumers.
+- Shared state and side-effect surface.
+- Relevant type-checking, linting, or static-analysis results.
+
+Report improvements, regressions, and unknowns separately. A successful test
+run does not prove maintainability improved; a cleaner static-analysis report
+does not prove behavior was preserved.
+
+### 2.7.7 Role Responsibilities
+
+- **Coordinator:** Owns repository- and task-level assessment, decides how
+  findings affect delegation and execution, and makes the final integrated
+  comparison.
+- **Developer:** Understands local health constraints, minimizes unnecessary
+  change surface, avoids introducing unjustified complexity or coupling, and
+  reports relevant structural changes.
+- **Tester:** Establishes behavioral baselines and verifies required behavior
+  and regressions. Test coverage is evidence of test presence, not proof that
+  all behavior is correct.
+- **Reviewer:** Inspects the actual change for material maintainability,
+  dependency, interface, and side-effect regressions within the assigned
+  scope.
+
+Workers report evidence from their own scope. The Coordinator consolidates
+those reports; workers do not independently claim a repository-wide health
+score.
+
 ## 3. Developer Role
 
 ### 3.1 Mission
 
 Implement the assigned behavior or change correctly and with the smallest coherent modification.
 
-The Developer owns implementation quality within the assigned scope.
+The Developer owns implementation quality within the assigned scope. The Developer should preserve relevant Code Health constraints, avoid unnecessary complexity or coupling, and report material structural changes or regressions.
 
 ### 3.2 Workflow
 
@@ -169,7 +282,7 @@ Provide concrete file or symbol references where useful.
 
 Establish whether the assigned behavior satisfies its observable requirements.
 
-The Tester owns test design and verification within the assigned scope.
+The Tester owns test design and verification within the assigned scope. The Tester contributes behavioral-safety evidence, including relevant baseline, regression, and coverage limitations, rather than assigning a repository-wide Code Health score.
 
 The Tester should independently assess behavior rather than merely confirm the Developer's description.
 
@@ -294,7 +407,7 @@ The Coordinator decides whether findings should be addressed, deferred, or expli
 
 Focus on the actual diff and relevant surrounding code.
 
-Review for requirement violations, incorrect behavior, logic errors, interface or contract violations, compatibility issues, regressions, error-handling problems, security or safety concerns, and significant design defects affecting correctness or maintainability.
+Review for requirement violations, incorrect behavior, logic errors, interface or contract violations, compatibility issues, regressions, error-handling problems, security or safety concerns, and significant design defects affecting correctness or maintainability. Where relevant to the assignment, inspect whether the change introduces unjustified complexity, coupling, duplication, dependency problems, or a broader side-effect surface.
 
 Do not expand into unrelated repository-wide review.
 
@@ -450,6 +563,8 @@ If essential information is missing, identify it specifically. Do not compensate
 
 Every final report must distinguish work completed, evidence obtained, validation performed, findings or failures, remaining uncertainty, and uncompleted work.
 
+Requirements are carried by the todo the worker takes, not by the chat message. See section 13.
+
 ## 9. Definition of Success
 
 Engineering work succeeds when:
@@ -478,141 +593,20 @@ When Skill availability or inheritance is uncertain:
 
 Workers must follow the actual runtime capabilities and tool restrictions of the active Jcode version.
 
-<!-- Added by the dsh-swarm-workflow plugin: the Coordinator-side methods the orchestration policy no longer carries inline. The three sections *Role Dependencies and Execution Patterns*, *Review and Verification Termination* and *Stalling Detection and Recovery* are the USER's own prose — relocated from the orchestration policy's matching sections — with new section numbers: the policy's section 6 is section 11 here, the policy's section 9 is section 12 and the policy's section 10 is section 13; the prose is verbatim, the headings are renumbered. The sections after them are the plugin's own rules. A worker needs its own role section (*Developer Role*, *Tester Role*, *Reviewer Role*), the shared contract in *Assignment and Reporting Contract*, and the requirement rules in *Requirement Matching* and *Requirement handover*. -->
+## 11. Coordinator Practice
 
-## 11. Role Dependencies and Execution Patterns
+Practice that makes the policy above work. It does not change the policy.
 
-Use these patterns as starting points and adapt them to the task.
-
-### 11.1 Developer Only
-Use when the change is straightforward and required validation can be performed directly.
-
-Flow: Coordinator → Developer → Coordinator verification and acceptance
-
-### 11.2 Developer + Tester
-Use when observable behavior and regression coverage are important.
-
-Flow: Coordinator → Developer → Tester → Coordinator
-
-The Tester should receive requirements, relevant constraints, and expected behavior, not merely a list of implementation details. The Tester reports test design, execution results, failures, and coverage gaps.
-
-### 11.3 Developer + Reviewer
-Use when correctness, architecture, compatibility, or security risks warrant independent review.
-
-Flow: Coordinator → Developer → Reviewer → Coordinator
-
-The Reviewer examines the actual diff and relevant surrounding context. Findings must identify evidence, impact, and actionable remediation.
-
-### 11.4 Developer + Tester + Reviewer
-Use for complex or high-risk work.
-
-Typical flow:
-Coordinator
-  → Developer
-  → Tester
-  → Reviewer
-  → Coordinator integration and acceptance
-
-Testing and review may run in parallel when both can independently inspect the same completed implementation. If a review finding changes the implementation, affected verification must be repeated.
-
-### 11.5 Multiple Developers
-Use multiple Developers when workstreams are genuinely independent.
-
-Before parallel implementation, define ownership boundaries, shared interfaces, files or components each worker may modify, dependencies, and integration expectations.
-
-Avoid parallel changes to the same files or shared contracts without explicit coordination.
-
-## 12. Review and Verification Termination
-
-### 12.1 Review Scope
-
-Reviewer should focus on the assigned change and relevant dependencies.
-
-Review for material issues such as incorrect behavior, violated requirements or contracts, regressions, interface incompatibility, unsafe or insecure behavior, error-handling defects, and significant design problems affecting maintainability or correctness.
-
-Do not expand review scope indefinitely into unrelated code.
-
-### 12.2 Finding Classification
-
-- **Blocking:** Prevents acceptance or causes a serious correctness or safety issue.
-- **Material:** Significant issue requiring resolution or explicit acceptance.
-- **Non-blocking:** Improvement that does not prevent acceptance.
-- **Out of scope:** Unrelated observation.
-
-Each material finding must include evidence or location, description, impact, reproduction or reasoning where applicable, and suggested remediation.
-
-### 12.3 Review Completion Gate
-
-A review is complete when the relevant scope has been examined, material risks assessed, findings sufficiently supported, blocking and material findings reported, and remaining observations are non-blocking or out of scope.
-
-Do not keep repeating review cycles to discover increasingly speculative improvements.
-
-### 12.4 Remediation and Re-review
-
-When findings require changes:
-1. Coordinator evaluates and prioritizes findings.
-2. Developer receives a bounded remediation assignment.
-3. Developer reports changes and validation.
-4. Relevant parts are re-tested or re-reviewed.
-5. Coordinator determines whether the finding is resolved.
-
-Re-review should focus on changed behavior and affected risks. Do not repeat the entire review without a reason.
-
-### 12.5 Verification Completion Gate
-
-Verification is complete when required tests and checks have been executed, results assessed against acceptance criteria, failures resolved or explicitly reported, remaining coverage gaps and limitations understood, and Coordinator has enough evidence to make an acceptance decision.
-
-## 13. Stalling Detection and Recovery
-
-Detect when a worker or workflow is no longer making meaningful progress.
-
-Potential signs:
-- Repeated inspection without new evidence.
-- Repeatedly reporting the same uncertainty.
-- Repeated review comments without actionable findings.
-- Repeatedly executing ineffective checks.
-- Expanding scope without advancing the objective.
-- Waiting on an unclear dependency.
-- Producing reports without concrete deliverables.
-
-### Recovery Procedure
-1. Stop the unproductive activity.
-2. Summarize established facts and completed work.
-3. Identify the unresolved decision or blocker.
-4. Check whether assignment exit criteria have already been met.
-5. Narrow the task to the missing evidence or deliverable.
-6. Change the approach, reassign, or escalate when necessary.
-7. Continue from the last valid state.
-
-Do not restart completed work without justification. Do not let an investigation or review loop block the workflow when a focused next action is available.
-
-<!-- Added by the dsh-swarm-workflow plugin: the Coordinator practice that the orchestration policy no longer carries inline. *Coordinator Practice* is Coordinator-side; a worker needs its own role section (*Developer Role*, *Tester Role*, *Reviewer Role*) and the shared contract in *Assignment and Reporting Contract*. -->
-
-## 14. Coordinator Practice
-
-Practice learned in the field, added by the plugin. It does not change the policy above; it is how the policy is best executed on this host.
-
-- **Give every parallel lane its own file set.** The board's `write_scopes` are advisory, not a lock: two workers handed the same files will collide, and a reviewer reading that diff will watch it change under it. Lanes that must share a file run one after the other, or they get separate files.
-- **Run the independent verification once, at acceptance.** One full suite run by you, after the workers are done, is evidence; three overlapping runs are cost without evidence. Let each worker's own report carry its own narrow checks.
+- **Give every parallel lane its own file set.** A lane's ownership list is advisory, not a lock. Two workers handed the same files collide, and a reviewer reading that diff watches it change under them. Lanes that must share a file run one after the other, or they get separate files.
+- **Run the independent verification once, at acceptance.** One full run after the workers are done is evidence. Three overlapping runs are cost without evidence. Let each worker's own report carry its own narrow checks.
 - **Put an open product decision in front of the human before you delegate.** If the requirement leaves a choice open — what exit code a command returns, what counts as failure, which of two behaviours is correct — a worker cannot make that call for you. Ask once, up front, and write the answer into the brief so no round is spent on it later.
-- **An assignment names every surface the worker may touch.** Give it the files it may write, the commands it may run and the surfaces it must not touch (the plugin directory, the profile and its plugin rows, the network, other people's workspaces). A worker that meets a surface it was not given stops and reports; it does not explore, and it does not install anything into the host.
-- **Use `subagent`, not `subagent_fork`, when the parent conversation is long.** A forked worker inherits the whole parent transcript — including the original user request — and may act on that instead of its assignment. The rule for the brief is the same as the rule for the tool: a fresh worker gets a fresh context.
-- **Name one test file per function in every brief.** The Developer owns the implementation smoke test; the Tester owns the requirement-clause file. Two workers never author tests for the same clause — that duplication is the defect the Tester is supposed to find in the implementation, not in another test file. The Tester's requirement-clause file cites the requirement each test covers, and a requirement with no test is a reported coverage gap, never a silent pass.
-- **Write the requirements down before you dispatch, and point the brief at that file.** Every requirement is one block in `.swarm/requirements/<work-item>.md`: the requirement, the observable check that proves it, and its source (the assignment, a repository rule by `file:line`, or the behaviour that must not change). The Developer does not author requirements; the Coordinator writes them, and reconciles the file with the repository's existing tests before it is written. The brief names the file and the requirements it covers and does not repeat their text — a copy in a chat message is what drifts. The *Requirement handover* section carries the full handover rule and *Requirement Matching* the matching rule every lane reports against.
+- **An assignment names every surface the worker may touch.** Give it the files it may write, the commands it may run, and the surfaces it must not touch. A worker that meets a surface it was not given stops and reports. It does not explore, and it does not install anything into the host.
+- **Name one test file per function in every brief.** The Developer owns the implementation smoke test. The Tester owns the requirement-clause file. Two workers never author tests for the same clause, because that duplication is the defect the Tester is supposed to find in the implementation, not in another test file. The Tester's requirement-clause file cites the requirement each test covers, and a requirement with no test is a reported coverage gap, never a silent pass.
 - **Accept a worker's executed evidence as the evidence for that claim.** Re-run a check yourself only when the files changed after that worker's run, or when two reports disagree — and then run the independent verification once, at acceptance.
-- **Never poll with sleeps or wait loops.** You are notified when a worker finishes: do other work, or wait for the completion notice.
-- **Keep one ledger row per round** — the agents spawned, the files each touched, the verdict, and where the evidence came from — written once, in order.
+- **Never poll with sleeps or wait loops.** Use `swarm await_members`, which waits in the background and notifies you when a worker finishes. Do other work, or wait for the completion notice.
+- **Keep one ledger row per round.** The `todo` list is the ledger: the lanes spawned, what each owns, the verdict, and where the evidence came from. Write it once, in order.
 
-<!-- Added by the dsh-swarm-workflow plugin: host facts for this runtime. Not skill text, not policy. -->
-
-## 15. Host facts — this runtime
-
-- This host is the DeepSeek Harness, not Jcode. Where *Skill Availability and Execution* says "the active Jcode version", read it as the runtime you actually run in: check the tool surfaces you are given, and use the ones the host lists. The same applies to the orchestration policy's *Jcode Runtime and Model Configuration* section, whose runtime-specific wording belongs to another runtime.
-- A worker receives the parts of the global execution policy that bind it through the worker prompt and through this skill. The policy is not a separate file to open; it is not missing, it is delivered in the form that binds you.
-
-<!-- Added by the dsh-swarm-workflow plugin: requirement matching for every worker. Not skill text, not policy; the plugin's own rule. -->
-
-## 16. Requirement Matching
+## 12. Requirement Matching
 
 This section binds the Reviewer, and any worker asked to report against a requirement.
 
@@ -627,29 +621,101 @@ A verdict without evidence is `not demonstrated`, never `met`. The Tester's `pas
 
 Two checks, not one: does the check discriminate — would it fail if the behaviour were wrong — and is the behaviour the one the requirement asked for. A review that runs only one of them has not matched the requirement.
 
-If your assignment carried no requirements, say so and report it as a gap; do not invent requirements.
+If your assignment carried no requirements, say so and report it as a gap. Do not invent requirements.
 
-This section adds to the review completion gate: a review is complete only when every requirement in the assignment carries a verdict and its evidence, or is reported as `not demonstrated`. A `not demonstrated` requirement blocks acceptance until it is checked, or until the Coordinator records an explicit waiver with a reason in the ledger row.
+This section adds to the review completion gate: a review is complete only when every requirement in the assignment carries a verdict and its evidence, or is reported as `not demonstrated`. A `not demonstrated` requirement blocks acceptance until it is checked, or until the Coordinator records an explicit waiver with a reason in the todo row.
 
-<!-- Added by the dsh-swarm-workflow plugin: requirement handover for every worker. Not skill text, not policy; the plugin's own rule. -->
+## 13. Requirement Handover
 
-## 17. Requirement handover
+Jcode has no separate requirements file. The requirement lives in the todo the worker takes, and the todo's `details` field is the only part handed to that worker.
 
-When the work carries requirements, they live in a FILE, not in the chat. The Coordinator writes that file before dispatching. No worker authors requirements, and no worker keeps a copy of the requirement text in its own words.
+- The Coordinator writes the todo before dispatching, with one todo per requirement, or a todo whose `details` carries one requirement block per requirement.
+- The `details` field of a todo carries the requirement, the observable check that proves it, and its source:
 
-- The file lives in the project the swarm works on, under `.swarm/requirements/`, one file per work item: `.swarm/requirements/<work-item>.md`.
-- Each requirement is one block, carrying the requirement, the observable check that proves it, and its source:
+  ```
+  <the requirement>
+      check: <what proves it>
+      source: <the assignment | path:line | the behaviour that must not change>
+  ```
 
-```
-### <ID> — <short title>
-<the requirement>
-check: <what proves it>
-source: <the assignment | path:line | the behaviour that must not change>
-```
+- The brief names the todos it covers. It does not repeat the requirement text: a copy in a chat message is what drifts.
+- No worker authors requirements, and no worker keeps a copy of the requirement text in its own words.
+- The todo list is where the requirement text comes from. If the brief describes a requirement differently, or names a requirement the todo does not define, the worker REPORTS THE CONFLICT and stops that requirement. It does not pick a winner and it does not invent the missing one. The requirement is `not demonstrated` until the conflict is resolved; the other requirements are unaffected.
+- A worker cites the requirement as `<todo id>`. A verdict without that citation is `not demonstrated`.
+- A requirement whose todo cannot be read is `not demonstrated`, never `met`.
+- A todo is only authoritative over the behaviour it names. Before it is written, the Coordinator reconciles it with the repository's existing tests; a requirement that contradicts an existing test is a conflict in its own right, and it is reported like any other.
 
-- The brief names the file and the requirements it covers. It does not repeat the requirement text: a copy in a chat message is what drifts.
-- The board entry carries the same path, for the same reason.
-- The file is where the requirement text comes from. If the brief or the board entry describes a requirement differently, or names a requirement the file does not define, the lane REPORTS THE CONFLICT and stops that requirement — it does not pick a winner and it does not invent the missing one. The requirement is `not demonstrated` until the conflict is resolved; the other requirements are unaffected.
-- A lane cites the requirement as `<file>:<line>`. A verdict without that citation is `not demonstrated`. A line number is a convenience, not an identity: it drifts the moment the file grows, so the lane resolves its citation against the requirement it names before it reports — a citation that points at a different requirement is worse than no citation.
-- A requirement whose file cannot be read is `not demonstrated`, never `met`.
-- A requirements file is only authoritative over the behaviour it names. Before it is written, the Coordinator reconciles it with the repository's existing tests; a requirement that contradicts an existing test is a conflict in its own right, and it is reported like any other — the lane does not pick a winner between the file and the test.
+## 14. Native Verification Surfaces
+
+Jcode verifies independently without a worker. Prefer these over spawning a
+critic.
+
+- **`/autoreview`** reviews the session's actual changes. It inspects the repo
+  with `git diff --stat`, `git diff --name-only`, and focused file reads, and
+  reports concrete findings with severity and file paths. It takes `on`, `off`,
+  `status`, and `now`. `now` launches the reviewer on demand. Enabled per
+  session with `/autoreview on`, or globally with
+  `[autoreview] enabled = true` in `config.toml`. Its model is
+  `[autoreview] model`. It is a TUI command, so it is typed by the user in
+  the composer, not called by an agent.
+- **`/autojudge`** is a completion manager. It decides whether the parent agent
+  should keep going and tells it exactly what to do next. It only says stop
+  when the intent has been carried through. It takes the same four arguments.
+  `now` launches the judge on demand. Enabled with `/autojudge on` or
+  `[autojudge] enabled = true`. Its model is `[autojudge] model`.
+- **`/review` and `/judge`** are the one-shot forms. They launch a headed
+  review or judge session on demand, without relying on the end-of-turn trigger.
+
+All of these are client-side TUI commands. A worker or a headless agent cannot
+type them into the user's composer, and no tool exposes them to the model. An
+agent that needs independent verification asks for it in its report, and the
+user runs the command.
+
+### 14.1 The end-of-turn trigger is mode-dependent
+
+`[autoreview] enabled` and `[autojudge] enabled` are the *default* for the
+session flag, nothing more. On v0.99.1 the automatic end-of-turn hook sits at
+the end of the TUI's local turn path, and that hook bails out when the app is
+in remote mode. The product TUI starts in remote mode, so in normal use the
+flag is set and reported but no reviewer or judge is spawned at end of turn.
+
+The local turn path is not dead code, though. `jcode ambient run-visible`
+builds a local, non-remote app, so the end-of-turn trigger does fire there. The
+ambient runner spawns that command when `[ambient] visible = true`. The repo
+config sets `visible = false`, so ambient cycles run headless and stay outside
+it.
+
+Consequences for a Reviewer:
+
+- `/autoreview status` reporting "enabled" is not evidence that a review ran.
+  It reports the flag.
+- Do not treat "the flag was on" as independent verification. If the task
+  needs a review, request it with `/autoreview now` or `/review`, or read the
+  diff and run the tests directly.
+- Headless runs (`jcode run`, swarm workers, headless ambient cycles) have no
+  TUI turn path at all, so the automatic trigger cannot fire there either.
+- `/autoreview now` and `/autojudge now` work in the TUI, in both remote and
+  local mode. They are the reliable way to get a review, and they are typed by
+  the user, not by an agent.
+
+The one-shot children are created with both flags disabled, so a review or
+judge does not spawn a review or judge of its own.
+
+These review the actual repo state, which is why they substitute for a Reviewer
+worker rather than complement it. The Reviewer section above still describes
+what their output should contain, and the finding classification still applies
+to their results.
+
+The two paths are not interchangeable. The native surfaces inspect the
+coordinator's working tree. If workers wrote into isolated worktrees, their
+changes are not in that tree and the native reviewer will not see them: verify
+per lane, or integrate first. A Reviewer worker, by contrast, receives the
+shared plan and its scoped instructions, and can be given a worktree scope or a
+different working directory. Use a Reviewer worker when the thing to review is
+not in the coordinator's tree, or when the review needs a specific lens you
+want stated in the brief.
+
+A worker whose only job is to critique is a poor use of a worker when the
+changes are in the coordinator's tree. It has the same tool description and the
+same skill, but it costs a lane, a slot, and a round trip for output the host
+can produce faster and against the real diff.

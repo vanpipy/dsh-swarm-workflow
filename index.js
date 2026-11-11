@@ -2,17 +2,19 @@
  * Host half of the swarm-workflow bundle.
  *
  * It contributes the swarm workflow that the global execution policy defers to
- * `swarm-prompt.md`: the session's main agent is the swarm Coordinator and
- * receives the orchestration policy, while a delegated worker receives the
- * worker prompt. It also registers the `swarm-engineering` skill that carries
- * the role-specific engineering methods, and a `/swarm` command that reports
- * what this session can actually do.
+ * the delegation briefing: the session's main agent is the swarm Coordinator
+ * and receives the orchestration policy, while a delegated worker receives the
+ * policy that governs delegated work. It also registers the
+ * `swarm-engineering` skill that carries the role-specific engineering methods,
+ * and a `/swarm` command that reports what this session can actually do.
  *
- * The bundle ships three markdown files and nothing else:
- * `swarm-prompt.md` (the Coordinator policy plus this runtime's host facts for
- * the Coordinator), `swarm-worker-prompt.md` (the worker prompt plus the host
- * facts a worker needs) and `skills/swarm-engineering.md` (the role methods).
- * The plugin only reads them and never rewrites them.
+ * The bundle ships four markdown files: `prompt-overlay.md` (the global
+ * execution policy), `swarm-prompt.md` (the delegation briefing),
+ * `skills/swarm-engineering.md` (the role methods) and `runtime-note.md` (the
+ * host note — every fact about this runtime). The first three are the user's
+ * own text, shipped byte for byte; the plugin reads them, composes a view of
+ * them for the audience it is assembling a prompt for, and never rewrites
+ * them.
  *
  * Two properties make the workflow track the host instead of a snapshot:
  * every file is re-read when it changes on disk, and the host facts are
@@ -46,10 +48,56 @@ const SECTION_ORDER = 8000
 /** Origin label the skill registry requires on every loaded skill definition. */
 const SKILL_SOURCE = 'dsh-swarm-workflow'
 
-/** The three bundled markdown files, relative to this module. */
-const COORDINATOR_PROMPT = './swarm-prompt.md'
-const WORKER_PROMPT = './swarm-worker-prompt.md'
+/**
+ * The four bundled markdown files, relative to this module.
+ *
+ * Three of them are the user's own text and are only ever read; the runtime
+ * note is the plugin's own file and carries every host-specific fact.
+ */
+const RUNTIME_NOTE = './runtime-note.md'
+const PROMPT_OVERLAY = './prompt-overlay.md'
+const SWARM_BRIEF = './swarm-prompt.md'
 const SKILL_FILE = './skills/swarm-engineering.md'
+
+/**
+ * The heading that ends the worker's share of the global execution policy.
+ *
+ * Section 12 is the Coordinator's operating manual — how to delegate, how to
+ * judge a report — and it stays with the Coordinator.
+ */
+const WORKER_OVERLAY_CUT = '12. Swarm Orchestration'
+
+/**
+ * The skill sections a worker gets verbatim.
+ *
+ * These are the sections a lane cannot infer from its assignment alone: the
+ * shared assignment contract and the two rules every lane reports against.
+ */
+const WORKER_SKILL_SECTIONS = [
+  '8. Assignment and Reporting Contract',
+  '12. Requirement Matching',
+  '13. Requirement Handover',
+]
+
+/**
+ * A scope marker that opens one block of the runtime note.
+ *
+ * The marker is matched one line at a time, so a block boundary can never be
+ * moved by whitespace that spans lines.
+ */
+const NOTE_MARKER = /^\s*<!--\s*swarm:note\s+([a-z\s]+)-->\s*$/
+
+/** A markdown heading, with the level it carries. */
+const HEADING = /^(#{1,6})\s+(.+)$/
+
+/**
+ * The number a heading may carry in front of its text.
+ *
+ * The shipped files number their sections ("12. ", "12.4 ", "7A. "), and that
+ * number is not part of the name a caller asks for, so it is stripped before
+ * two headings are compared.
+ */
+const HEADING_NUMBER = /^\d+(?:\.\d+)*[A-Za-z]?\.?\s+/
 
 /** Line the plugin replaces with the live capability block. */
 const CAPABILITY_MARKER = '<!-- swarm:capabilities -->'
@@ -104,7 +152,7 @@ const FILE_ERROR_PREFIX = '> **The swarm bundle file'
  * catalog line is what an agent reads before it decides to load the skill.
  */
 const HOST_NOTE =
-  'On this host the runtime is DeepSeek Harness, not Jcode: the methods are the same, and the live surfaces are the ones the swarm prompt names. '
+  'On this host the runtime is DeepSeek Harness, not Jcode: the methods are the same, and the live surfaces are the ones the runtime note names. '
 
 /** How long a probed tool list stays valid before it is probed again. */
 const CAPABILITY_TTL_MS = 5000
@@ -201,6 +249,197 @@ function parseSkillFile(raw) {
       : fields.description,
     content: raw.slice(match[0].length),
   }
+}
+
+/**
+ * Split the runtime note into scoped blocks.
+ *
+ * The note is the plugin's own file: every host-specific fact lives in it, in
+ * a block marked with the audiences it is written for. A prompt ships the
+ * blocks of the audience it is assembled for and nothing else, so a fact
+ * written for a worker never reaches the Coordinator by accident.
+ *
+ * Text before the first marker is not a block and is dropped: the head of the
+ * file describes the file, not the host.
+ * @param {string} raw - the raw runtime note.
+ * @returns {{ scopes: string[], text: string }[]} the blocks, in file order.
+ */
+export function parseRuntimeNote(raw) {
+  const lines = typeof raw === 'string' ? raw.split('\n') : []
+  const starts = []
+  for (let index = 0; index < lines.length; index += 1) {
+    if (NOTE_MARKER.test(lines[index])) starts.push(index)
+  }
+  return starts.map((start, position) => {
+    const marker = NOTE_MARKER.exec(lines[start])
+    // A block runs from the line after its marker to the line before the next
+    // marker, whichever audience that marker names.
+    const end = position + 1 < starts.length ? starts[position + 1] : lines.length
+    const scopes = marker[1]
+      .split(/\s+/)
+      .map((scope) => scope.toLowerCase())
+      .filter((scope) => scope.length > 0)
+    return { scopes, text: lines.slice(start + 1, end).join('\n') }
+  })
+}
+
+/**
+ * The text of a heading in a comparable shape.
+ *
+ * The shipped files number their sections, and a caller asks for a section by
+ * name; the number is stripped on both sides so "12. Requirement Matching"
+ * and "Requirement Matching" are the same section.
+ * @param {string} text - the heading text.
+ * @returns {string} the comparable heading text.
+ */
+function normalizeHeading(text) {
+  if (typeof text !== 'string') return ''
+  return text.replace(HEADING_NUMBER, '').trim().toLowerCase()
+}
+
+/**
+ * Every heading in a markdown text, with the offset where its line starts.
+ *
+ * The offsets are what let a section be cut out verbatim, without the file
+ * being reassembled from its parts.
+ * @param {string} markdown - the markdown text.
+ * @returns {{ level: number, title: string, start: number }[]} the headings, in file order.
+ */
+function findHeadings(markdown) {
+  const lines = markdown.split('\n')
+  const headings = []
+  let offset = 0
+  for (const line of lines) {
+    const match = HEADING.exec(line)
+    if (match !== null) headings.push({ level: match[1].length, title: match[2], start: offset })
+    offset += line.length + 1
+  }
+  return headings
+}
+
+/**
+ * One heading section, verbatim: the heading line plus its body, up to but
+ * not including the next heading of the same or a higher level.
+ * @param {string} markdown - the markdown text.
+ * @param {string} title - the section to take.
+ * @returns {string | null} the section, or null when no heading matches.
+ */
+export function extractSection(markdown, title) {
+  if (typeof markdown !== 'string') return null
+  const headings = findHeadings(markdown)
+  const wanted = normalizeHeading(title)
+  const index = headings.findIndex((heading) => normalizeHeading(heading.title) === wanted)
+  if (index === -1) return null
+  const heading = headings[index]
+  // A subsection does not end its parent; only a heading of the same or a
+  // higher level does.
+  let end = markdown.length
+  for (let next = index + 1; next < headings.length; next += 1) {
+    if (headings[next].level <= heading.level) {
+      end = headings[next].start
+      break
+    }
+  }
+  return markdown.slice(heading.start, end)
+}
+
+/**
+ * Everything before the heading that matches title, verbatim.
+ * @param {string} markdown - the markdown text.
+ * @param {string} title - the heading to stop at.
+ * @returns {string | null} the text before it, or null when no heading matches.
+ */
+export function extractUntil(markdown, title) {
+  if (typeof markdown !== 'string') return null
+  const wanted = normalizeHeading(title)
+  const heading = findHeadings(markdown).find((entry) => normalizeHeading(entry.title) === wanted)
+  if (heading === undefined) return null
+  return markdown.slice(0, heading.start)
+}
+
+/**
+ * The runtime-note blocks one audience gets.
+ * @param {string} raw - the raw runtime note.
+ * @param {string} scope - the audience: coordinator, worker or skill.
+ * @returns {string[]} the block texts, in file order.
+ */
+function noteBlocks(raw, scope) {
+  return parseRuntimeNote(raw)
+    .filter((block) => block.scopes.includes(scope))
+    .map((block) => block.text.trim())
+    .filter((text) => text.length > 0)
+}
+
+/**
+ * The name a bundled file is called in a notice.
+ * @param {string} path - the path of the bundled file.
+ * @returns {string} the file name.
+ */
+function bundleName(path) {
+  return path.replace(/^\.\//, '')
+}
+
+/**
+ * The notice that stands in for a section the shipped file no longer carries.
+ *
+ * A section that quietly disappears reads as "there is nothing to read here",
+ * so a gap in the bundle is named instead: the file that was searched and the
+ * section that was asked for.
+ * @param {string} file - the file that was searched.
+ * @param {string} title - the section that was requested.
+ * @returns {string} the notice.
+ */
+function missingSectionNotice(file, title) {
+  // The skill is read through the skill loader; any other bundled file is read
+  // where it ships, so the notice points at the right place.
+  const where = file === bundleName(SKILL_FILE)
+    ? 'Load the skill and read it there.'
+    : 'Read the file that ships with this bundle and check its section list.'
+  return `> **The bundled \`${file}\` no longer contains the section "${title}". ${where}**`
+}
+
+/**
+ * The Coordinator prompt.
+ *
+ * The Coordinator gets the host facts written for it, the whole global
+ * execution policy and the whole delegation briefing: it is the session's
+ * main agent, so nothing in the bundle is withheld from it.
+ * @param {{ note: string, overlay: string, brief: string, names?: string[], options?: object }} input - the bundle texts and the rendering options.
+ * @returns {string} the Coordinator prompt.
+ */
+export function composeCoordinatorPrompt(input) {
+  const parts = [
+    ...noteBlocks(input?.note ?? '', 'coordinator'),
+    input?.overlay ?? '',
+    input?.brief ?? '',
+  ].filter((part) => part.length > 0)
+  return renderPrompt(parts.join('\n\n'), input?.names, input?.options ?? {})
+}
+
+/**
+ * The worker prompt.
+ *
+ * A worker gets the host facts written for it, the part of the global
+ * execution policy that binds delegated work, and the skill sections a lane
+ * cannot infer from its assignment. The Coordinator's operating manual and the
+ * delegation briefing stay with the Coordinator.
+ * @param {{ note: string, overlay: string, skill: string, names?: string[], options?: object }} input - the bundle texts and the rendering options.
+ * @returns {string} the worker prompt.
+ */
+export function composeWorkerPrompt(input) {
+  const overlay = input?.overlay ?? ''
+  const skill = parseSkillFile(input?.skill ?? '').content
+  const policy = extractUntil(overlay, WORKER_OVERLAY_CUT)
+  const sections = WORKER_SKILL_SECTIONS.map((title) => {
+    const section = extractSection(skill, title)
+    return section ?? missingSectionNotice(bundleName(SKILL_FILE), title)
+  })
+  const parts = [
+    ...noteBlocks(input?.note ?? '', 'worker'),
+    policy ?? missingSectionNotice(bundleName(PROMPT_OVERLAY), WORKER_OVERLAY_CUT),
+    ...sections,
+  ].filter((part) => part.length > 0)
+  return renderPrompt(parts.join('\n\n'), input?.names, input?.options ?? {})
 }
 
 /**
@@ -555,22 +794,50 @@ function callingAgent(exec) {
 }
 
 /**
+ * A text field of the host's view, or an empty string when the host leaves it
+ * empty.
+ *
+ * A tool result may not carry an undefined value. The host rejects a result
+ * that is not lossless JSON, and it rejects the WHOLE result over one field.
+ * The host does not fill every field of every task — a task nobody owns has no
+ * ownerName — so every projected field is read through here.
+ * @param {unknown} value - the raw field.
+ * @returns {string} the field as a string, never undefined.
+ */
+function textOrEmpty(value) {
+  return typeof value === 'string' ? value : ''
+}
+
+/**
+ * The role a membership carries, or an empty string when the host names none.
+ * @param {object | undefined} membership - the host's membership.
+ * @returns {string} the role, never undefined.
+ */
+function membershipRole(membership) {
+  return typeof membership?.role === 'string' ? membership.role : ''
+}
+
+/**
  * Project one board task into the compact shape a lane reads.
+ *
+ * Every field is projected to the type the output schema declares, so a task
+ * the host describes thinly — an unowned one carries no ownerName — can never
+ * make the tool result a value the host refuses.
  * @param {object} task - the host's task view.
  * @returns {object} the compact task.
  */
 function projectTask(task) {
   return {
-    id: task.id,
-    revision: task.revision,
-    subject: task.subject,
-    status: task.status,
-    owner: task.ownerName,
-    ready: task.ready,
+    id: textOrEmpty(task.id),
+    revision: Number.isInteger(task.revision) ? task.revision : 0,
+    subject: textOrEmpty(task.subject),
+    status: textOrEmpty(task.status),
+    owner: textOrEmpty(task.ownerName),
+    ready: task.ready === true,
     blockedBy: Array.isArray(task.blockedBy) ? task.blockedBy : [],
     writeScopes: Array.isArray(task.writeScopes) ? task.writeScopes : [],
     writeScopeWarnings: Array.isArray(task.writeScopeWarnings) ? task.writeScopeWarnings : [],
-    description: task.description,
+    description: textOrEmpty(task.description),
   }
 }
 
@@ -676,11 +943,11 @@ export function buildSwarmToolDefinitions(ctx) {
    * is not in the team must not move it.
    * @param {object} agent - the calling agent.
    * @param {object | undefined} parent - the agent that spawned the caller.
-   * @returns {{ authority: object, relayed: boolean, role: string | undefined }} the authority, whether it was relayed, and the role.
+   * @returns {{ authority: object, relayed: boolean, role: string }} the authority, whether it was relayed, and the role.
    */
   const boardAuthority = (agent, parent) => {
     const membership = membershipOf(agent)
-    if (membership !== undefined) return { authority: agent, relayed: false, role: membership.role }
+    if (membership !== undefined) return { authority: agent, relayed: false, role: membershipRole(membership) }
     // An arbitrary root would read ANOTHER team's board and act with a
     // credential the service never granted it, which is the privilege
     // escalation path an audit must never open. So the lineage is walked,
@@ -708,7 +975,7 @@ export function buildSwarmToolDefinitions(ctx) {
     for (const candidate of chain) {
       const candidateMembership = membershipOf(candidate)
       if (candidateMembership !== undefined) {
-        return { authority: candidate, relayed: true, role: candidateMembership.role }
+        return { authority: candidate, relayed: true, role: membershipRole(candidateMembership) }
       }
     }
     throw new Error('This session is not a team member, and no ancestor of it is recognised as one, so the board cannot be read from here. Ask the Coordinator for the task text.')
@@ -756,11 +1023,18 @@ export function buildSwarmToolDefinitions(ctx) {
         } catch (error) {
           throw new Error(`swarm_worktree could not create the worktree: ${error?.message ?? String(error)}`)
         }
+        // The output schema declares the four fields as required strings, and a
+        // tool result may not carry an undefined value. A checkout the host
+        // gave no path for is no checkout at all, so it is reported as the
+        // failure it is instead of as an empty success.
+        if (typeof created?.path !== 'string' || created.path.length === 0) {
+          throw new Error('swarm_worktree could not create the worktree: the host returned no path for the new checkout.')
+        }
         return {
-          path: created.path,
-          branch: created.branch,
-          baseCommit: created.baseCommit,
-          repositoryRoot: created.repositoryRoot,
+          path: textOrEmpty(created.path),
+          branch: textOrEmpty(created.branch),
+          baseCommit: textOrEmpty(created.baseCommit),
+          repositoryRoot: textOrEmpty(created.repositoryRoot),
         }
       },
     },
@@ -827,7 +1101,7 @@ export function buildSwarmToolDefinitions(ctx) {
           const warnings = Array.isArray(task.writeScopeWarnings) && task.writeScopeWarnings.length > 0
             ? `\n  write scope warnings: ${task.writeScopeWarnings.join(', ')}`
             : ''
-          return [textBlock(`Task ${task.id} [${task.status}] rev ${task.revision}\n  subject: ${task.subject}\n  owner: ${task.owner ?? 'unowned'}\n  ready: ${task.ready}\n  blocked by: ${task.blockedBy.length > 0 ? task.blockedBy.join(', ') : 'nothing'}\n  write scopes: ${task.writeScopes.length > 0 ? task.writeScopes.join(', ') : 'none'}${warnings}\n  ${task.description}${actor}${authority}`)]
+          return [textBlock(`Task ${task.id} [${task.status}] rev ${task.revision}\n  subject: ${task.subject}\n  owner: ${task.owner || 'unowned'}\n  ready: ${task.ready}\n  blocked by: ${task.blockedBy.length > 0 ? task.blockedBy.join(', ') : 'nothing'}\n  write scopes: ${task.writeScopes.length > 0 ? task.writeScopes.join(', ') : 'none'}${warnings}\n  ${task.description}${actor}${authority}`)]
         },
       },
       execute: async (args, exec) => {
@@ -846,7 +1120,7 @@ export function buildSwarmToolDefinitions(ctx) {
           } catch (error) {
             throw new Error(`swarm_task could not list the board: ${error?.message ?? String(error)}`)
           }
-          return { relayed, actor: agent.id, authority: authority.id, authorityRole: role, tasks: tasks.map(projectTask) }
+          return { relayed, actor: agent.id, authority: textOrEmpty(authority.id), authorityRole: role, tasks: tasks.map(projectTask) }
         }
         const taskId = args?.task_id
         if (typeof taskId !== 'string' || taskId.length === 0) {
@@ -860,7 +1134,7 @@ export function buildSwarmToolDefinitions(ctx) {
           } catch (error) {
             throw new Error(`swarm_task could not read task ${taskId}: ${error?.message ?? String(error)}`)
           }
-          return { relayed, actor: agent.id, authority: authority.id, authorityRole: role, task: projectTask(task) }
+          return { relayed, actor: agent.id, authority: textOrEmpty(authority.id), authorityRole: role, task: projectTask(task) }
         }
         const expectedRevision = args?.expected_revision
         if (!Number.isInteger(expectedRevision)) {
@@ -880,7 +1154,7 @@ export function buildSwarmToolDefinitions(ctx) {
         } catch (error) {
           throw new Error(`swarm_task could not ${action} task ${taskId}: ${error?.message ?? String(error)}`)
         }
-        return { relayed: false, actor: agent.id, authority: agent.id, authorityRole: membership.role, task: projectTask(updated) }
+        return { relayed: false, actor: agent.id, authority: agent.id, authorityRole: membershipRole(membership), task: projectTask(updated) }
       },
     },
     {
@@ -935,10 +1209,10 @@ export function buildSwarmToolDefinitions(ctx) {
           }
           return {
             children: children.map((child) => ({
-              id: child.id,
-              mode: child.mode,
+              id: textOrEmpty(child.id),
+              mode: textOrEmpty(child.mode),
               label: child.label ?? null,
-              createdAt: child.createdAt,
+              createdAt: child.createdAt === undefined ? null : child.createdAt,
             })),
           }
         }
@@ -1023,7 +1297,11 @@ export function apply(ctx) {
    */
   const syncSkill = () => {
     const raw = readText(SKILL_FILE)
-    const stamp = fileCache.get(SKILL_FILE)?.stamp ?? 'missing'
+    const note = readText(RUNTIME_NOTE)
+    // The registered content is the note's skill blocks plus the skill body,
+    // so the stamp has to cover both files: a change to either one changes
+    // what the skill says.
+    const stamp = `${fileCache.get(SKILL_FILE)?.stamp ?? 'missing'}:${fileCache.get(RUNTIME_NOTE)?.stamp ?? 'missing'}`
     if (stamp === skillStamp) return
     skillStamp = stamp
     if (skillDisposer !== null) {
@@ -1031,6 +1309,7 @@ export function apply(ctx) {
       skillDisposer = null
     }
     const skill = parseSkillFile(raw)
+    const content = [...noteBlocks(note, 'skill'), skill.content].join('\n\n')
     const disposer = ctx.skills.register({
       name: skill.name,
       // The description in the file is the user's own text and stays byte for
@@ -1038,7 +1317,7 @@ export function apply(ctx) {
       // because the catalog line is what an agent reads before it decides to
       // load the skill.
       description: HOST_NOTE + skill.description,
-      content: skill.content,
+      content,
       source: SKILL_SOURCE,
       whenToUse: 'Use before non-trivial engineering work in a swarm: leading and briefing subagents, reviewing their results, or executing a delegated task.',
     })
@@ -1091,12 +1370,25 @@ export function apply(ctx) {
         // A skill that cannot be re-registered must not break the prompt.
       }
       const names = probeToolNames(ctx, context)
-      const raw = isCoordinator(ctx, context) ? readText(COORDINATOR_PROMPT) : readText(WORKER_PROMPT)
-      const referenced = [
-        ...referencedTools(readText(COORDINATOR_PROMPT)),
-        ...referencedTools(readText(WORKER_PROMPT)),
-      ]
-      return renderPrompt(raw, names, { command: commandRegistered, referenced })
+      // The runtime note is the only file that carries markers, so it is also
+      // the only file that can name a surface this host does not offer.
+      const options = { command: commandRegistered, referenced: referencedTools(readText(RUNTIME_NOTE)) }
+      if (isCoordinator(ctx, context)) {
+        return composeCoordinatorPrompt({
+          note: readText(RUNTIME_NOTE),
+          overlay: readText(PROMPT_OVERLAY),
+          brief: readText(SWARM_BRIEF),
+          names,
+          options,
+        })
+      }
+      return composeWorkerPrompt({
+        note: readText(RUNTIME_NOTE),
+        overlay: readText(PROMPT_OVERLAY),
+        skill: readText(SKILL_FILE),
+        names,
+        options,
+      })
     },
   }))
 
@@ -1118,17 +1410,15 @@ export function apply(ctx) {
             return { kind: 'error', text: 'The swarm workflow is active, but this host exposes no tool registry to probe.' }
           }
           // The referenced set names every tool the prompts gate on, so a
-          // marker whose tool this host lacks is reported here too.
-          const referenced = [
-            ...referencedTools(readText(COORDINATOR_PROMPT)),
-            ...referencedTools(readText(WORKER_PROMPT)),
-          ]
+          // marker whose tool this host lacks is reported here too. The
+          // runtime note is the only file that carries markers.
+          const referenced = referencedTools(readText(RUNTIME_NOTE))
           // The command is registered by definition here, so the block it
           // prints is the block the prompt shows — including the `/swarm` line.
           const block = capabilityBlock(names, { referenced, command: true })
           return {
             kind: 'success',
-            text: `${block}\n\nThe Coordinator drives the swarm: open a session goal, give every parallel lane its own files, and delegate with the surfaces listed above. The \`swarm-engineering\` skill carries the role methods — Developer, Tester, Reviewer.`,
+            text: `${block}\n\nThe Coordinator drives the swarm: open a session goal, give every parallel lane its own files, and delegate with the surfaces listed above. The \`swarm-engineering\` skill carries the role methods — Developer, Tester, Reviewer, and the runtime note carries this host's facts.`,
           }
         },
       })
