@@ -7,7 +7,7 @@
 // This suite reads the files, so a rewrite that drops the craft guidance is a
 // red suite rather than a silently shorter method.
 //
-// Five files ship under `skills/craft/`: the shared craft every lane works by,
+// Five files ship under `skills/swarm-engineering/`: the shared craft every lane works by,
 // the craft of the Developer, of the Tester, of the Reviewer, and the pieces
 // of one language (Python today). The contract below is the design they ship:
 // the sections, the three checks, the twelve pieces, the nineteen Python
@@ -25,7 +25,7 @@ import { fileURLToPath } from 'node:url'
 const CRAFT_FILES = [
   {
     key: 'shared',
-    path: 'skills/craft/shared.md',
+    path: 'skills/swarm-engineering/shared.md',
     name: 'shared.md',
     title: 'The shared craft',
     sections: [
@@ -38,7 +38,7 @@ const CRAFT_FILES = [
   },
   {
     key: 'developer',
-    path: 'skills/craft/developer.md',
+    path: 'skills/swarm-engineering/developer.md',
     name: 'developer.md',
     title: "The developer's craft",
     sections: [
@@ -52,7 +52,7 @@ const CRAFT_FILES = [
   },
   {
     key: 'tester',
-    path: 'skills/craft/tester.md',
+    path: 'skills/swarm-engineering/tester.md',
     name: 'tester.md',
     title: "The tester's craft",
     sections: [
@@ -66,7 +66,7 @@ const CRAFT_FILES = [
   },
   {
     key: 'reviewer',
-    path: 'skills/craft/reviewer.md',
+    path: 'skills/swarm-engineering/reviewer.md',
     name: 'reviewer.md',
     title: "The reviewer's craft",
     sections: [
@@ -81,7 +81,7 @@ const CRAFT_FILES = [
   },
   {
     key: 'python',
-    path: 'skills/craft/languages/python.md',
+    path: 'skills/swarm-engineering/languages/python.md',
     name: 'python.md',
     title: 'The Python pieces',
     sections: [

@@ -17,11 +17,11 @@ rewritten for this host, and no host fact is written into the shipped text.
 | `swarm-prompt.md` | the user | the delegation briefing: what to delegate, what a brief must carry, where a requirement lives |
 | `skills/swarm-engineering.md` | the user | the role methods, the assignment contract, requirement matching and handover |
 | `runtime-note.md` | the plugin | the host note: the host identity, the Jcode-to-DeepSeek-Harness surface map, the requirement carrier, the verification path, and the live capabilities of the session |
-| `skills/craft/shared.md` | the plugin | the shared craft: the three checks that hold in every language, the pieces that shape the code, the other stacks |
-| `skills/craft/developer.md` | the plugin | the developer's craft: how a Developer applies the core to an edit |
-| `skills/craft/tester.md` | the plugin | the tester's craft: how a Tester applies the core to a check |
-| `skills/craft/reviewer.md` | the plugin | the reviewer's craft: how a Reviewer applies the core to a change |
-| `skills/craft/languages/python.md` | the plugin | the Python pieces: the idioms, the version floors, the traps |
+| `skills/swarm-engineering/shared.md` | the plugin | the shared craft: the three checks that hold in every language, the pieces that shape the code, the other stacks |
+| `skills/swarm-engineering/developer.md` | the plugin | the developer's craft: how a Developer applies the core to an edit |
+| `skills/swarm-engineering/tester.md` | the plugin | the tester's craft: how a Tester applies the core to a check |
+| `skills/swarm-engineering/reviewer.md` | the plugin | the reviewer's craft: how a Reviewer applies the core to a change |
+| `skills/swarm-engineering/languages/python.md` | the plugin | the Python pieces: the idioms, the version floors, the traps |
 
 `runtime-note.md` is written in scope blocks, marked
 `<!-- swarm:note coordinator worker skill -->`. The plugin prepends the blocks
@@ -91,16 +91,19 @@ longer contains is replaced by a visible notice rather than dropped silently.
 ## The craft guidance
 
 The craft guidance is additive: the skill owns the process and the roles, the
-craft directory owns the craft. It sits beside the skill so a lane reads the
-process and the craft in the same place, and it carries one file per role.
+craft directory owns the craft. It sits under the skill's own directory, so a
+lane reads the process and the craft in the same place, and it carries one file
+per role.
 
 ```
-skills/craft/
-  shared.md            the core every lane uses
-  developer.md         the developer's craft
-  tester.md            the tester's craft
-  reviewer.md          the reviewer's craft
-  languages/python.md  the language pieces
+skills/
+  swarm-engineering.md    the role methods (the user's file)
+  swarm-engineering/
+    shared.md            the core every lane uses
+    developer.md         the developer's craft
+    tester.md            the tester's craft
+    reviewer.md          the reviewer's craft
+    languages/python.md  the language pieces
 ```
 
 ### `shared.md`
@@ -270,12 +273,12 @@ index.js                      the plugin: prompt section, skill, tools, /swarm c
 prompt-overlay.md             the global execution policy (the user's text, verbatim)
 swarm-prompt.md               the delegation briefing (the user's text, verbatim)
 runtime-note.md               the host note: the host facts this plugin wrote
-skills/swarm-engineering.md   the role methods (the user's text, verbatim)
-skills/craft/shared.md         the shared craft every lane uses (the plugin's prose)
-skills/craft/developer.md      the developer's craft (the plugin's prose)
-skills/craft/tester.md         the tester's craft (the plugin's prose)
-skills/craft/reviewer.md       the reviewer's craft (the plugin's prose)
-skills/craft/languages/        the language pieces, one file per language
+skills/swarm-engineering.md          the role methods (the user's text, verbatim)
+skills/swarm-engineering/shared.md   the shared craft every lane uses (the plugin's prose)
+skills/swarm-engineering/developer.md  the developer's craft (the plugin's prose)
+skills/swarm-engineering/tester.md   the tester's craft (the plugin's prose)
+skills/swarm-engineering/reviewer.md the reviewer's craft (the plugin's prose)
+skills/swarm-engineering/languages/  the language pieces, one file per language
 cordis.patch.yml              the profile row (id: swarm-workflow)
 client.js, locale/, icon.svg  the Web-GUI side
 test/                         the suite that travels with the bundle
@@ -318,9 +321,9 @@ machine with no DSH host at all.
 * The execution policy, the delegation briefing and the skill text are shipped
   verbatim. Every host-specific fact lives in `runtime-note.md`, and the plugin
   composes a view of the shipped text instead of editing it.
-* The files under `skills/craft/` are plugin prose as well: the craft
-  guidance, kept in their own directory so it can grow without touching the
-  note or the user's text. The note names them, every brief names the file and
-  the piece that applies, each one is registered as a skill of its own, and
-  they are never composed into a prompt — a lane loads the skill it was
-  pointed at.
+* The files under `skills/swarm-engineering/` are plugin prose as well: the
+  craft guidance, kept in their own directory under the skill they belong to so
+  it can grow without touching the note or the user's text. The note names
+  them, every brief names the file and the piece that applies, each one is
+  registered as a skill of its own, and they are never composed into a prompt —
+  a lane loads the skill it was pointed at.

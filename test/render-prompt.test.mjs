@@ -135,11 +135,11 @@ const swarmOutput = swarmCommand === undefined ? '' : String(swarmCommand.handle
 // the loaded bundle. A lane then reads the file at that path, so the path has
 // to be the real one, and no token may ever reach a prompt.
 const CRAFT = [
-  { key: 'shared', path: 'craft/shared.md', name: 'shared.md', token: '{{swarm:shared}}' },
-  { key: 'developer', path: 'craft/developer.md', name: 'developer.md', token: '{{swarm:developer}}' },
-  { key: 'tester', path: 'craft/tester.md', name: 'tester.md', token: '{{swarm:tester}}' },
-  { key: 'reviewer', path: 'craft/reviewer.md', name: 'reviewer.md', token: '{{swarm:reviewer}}' },
-  { key: 'python', path: 'craft/languages/python.md', name: 'python.md', token: '{{swarm:python}}' },
+  { key: 'shared', path: 'swarm-engineering/shared.md', name: 'shared.md', token: '{{swarm:shared}}' },
+  { key: 'developer', path: 'swarm-engineering/developer.md', name: 'developer.md', token: '{{swarm:developer}}' },
+  { key: 'tester', path: 'swarm-engineering/tester.md', name: 'tester.md', token: '{{swarm:tester}}' },
+  { key: 'reviewer', path: 'swarm-engineering/reviewer.md', name: 'reviewer.md', token: '{{swarm:reviewer}}' },
+  { key: 'python', path: 'swarm-engineering/languages/python.md', name: 'python.md', token: '{{swarm:python}}' },
 ]
 /**
  * The path of a craft file, resolved the way the plugin resolves it.

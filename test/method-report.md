@@ -33,11 +33,11 @@ contract still holds:
 | --- | --- |
 | a root `methodology.md` with seven numbered principles, three lane sections, a role table and a Python appendix | **superseded** — the file was deleted from the bundle; the suites no longer reference it |
 | `skills/craft-methodology.md` + `skills/craft-python.md` (two files) | **superseded** — both were replaced by the five files below |
-| **`skills/craft/` — five files, each registered as a skill of its own** | **the contract of record**; this is what the suites check |
+| **`skills/swarm-engineering/` — five files, each registered as a skill of its own** | **the contract of record**; this is what the suites check |
 
 The contract of record, in the words the suites assert:
 
-1. **Five craft files ship under `skills/craft/`:**
+1. **Five craft files ship under `skills/swarm-engineering/`:**
    `shared.md` (`# The shared craft`; §1 How to use this file, §2 The three
    checks that hold in every language — `### 2.1`–`### 2.3`, each with
    `**The principle.**`, `**In practice.**` and `**How you show it.**` — §3 The
@@ -439,46 +439,46 @@ list is the whole suite.
 - `the registered content leaves the coordinator's note out`
 - `the registered content leaves the worker's note out`
 - `the registered content is the body, not the frontmatter`
-- `the craft/shared.md registration carries its own body`
-- `the craft/shared.md registration carries the note's skill block`
-- `the craft/shared.md registration starts with the note's first block`
-- `the craft/shared.md registration names this host in its catalog line`
-- `the craft/shared.md catalog line keeps the file's own description byte for byte`
-- `the craft/shared.md registration carries the whenToUse from the file`
-- `the craft/shared.md registration carries the bundle as its source`
-- `the craft/shared.md registration does not leak its frontmatter into the content`
-- `the craft/developer.md registration carries its own body`
-- `the craft/developer.md registration carries the note's skill block`
-- `the craft/developer.md registration starts with the note's first block`
-- `the craft/developer.md registration names this host in its catalog line`
-- `the craft/developer.md catalog line keeps the file's own description byte for byte`
-- `the craft/developer.md registration carries the whenToUse from the file`
-- `the craft/developer.md registration carries the bundle as its source`
-- `the craft/developer.md registration does not leak its frontmatter into the content`
-- `the craft/tester.md registration carries its own body`
-- `the craft/tester.md registration carries the note's skill block`
-- `the craft/tester.md registration starts with the note's first block`
-- `the craft/tester.md registration names this host in its catalog line`
-- `the craft/tester.md catalog line keeps the file's own description byte for byte`
-- `the craft/tester.md registration carries the whenToUse from the file`
-- `the craft/tester.md registration carries the bundle as its source`
-- `the craft/tester.md registration does not leak its frontmatter into the content`
-- `the craft/reviewer.md registration carries its own body`
-- `the craft/reviewer.md registration carries the note's skill block`
-- `the craft/reviewer.md registration starts with the note's first block`
-- `the craft/reviewer.md registration names this host in its catalog line`
-- `the craft/reviewer.md catalog line keeps the file's own description byte for byte`
-- `the craft/reviewer.md registration carries the whenToUse from the file`
-- `the craft/reviewer.md registration carries the bundle as its source`
-- `the craft/reviewer.md registration does not leak its frontmatter into the content`
-- `the craft/languages/python.md registration carries its own body`
-- `the craft/languages/python.md registration carries the note's skill block`
-- `the craft/languages/python.md registration starts with the note's first block`
-- `the craft/languages/python.md registration names this host in its catalog line`
-- `the craft/languages/python.md catalog line keeps the file's own description byte for byte`
-- `the craft/languages/python.md registration carries the whenToUse from the file`
-- `the craft/languages/python.md registration carries the bundle as its source`
-- `the craft/languages/python.md registration does not leak its frontmatter into the content`
+- `the swarm-engineering/shared.md registration carries its own body`
+- `the swarm-engineering/shared.md registration carries the note's skill block`
+- `the swarm-engineering/shared.md registration starts with the note's first block`
+- `the swarm-engineering/shared.md registration names this host in its catalog line`
+- `the swarm-engineering/shared.md catalog line keeps the file's own description byte for byte`
+- `the swarm-engineering/shared.md registration carries the whenToUse from the file`
+- `the swarm-engineering/shared.md registration carries the bundle as its source`
+- `the swarm-engineering/shared.md registration does not leak its frontmatter into the content`
+- `the swarm-engineering/developer.md registration carries its own body`
+- `the swarm-engineering/developer.md registration carries the note's skill block`
+- `the swarm-engineering/developer.md registration starts with the note's first block`
+- `the swarm-engineering/developer.md registration names this host in its catalog line`
+- `the swarm-engineering/developer.md catalog line keeps the file's own description byte for byte`
+- `the swarm-engineering/developer.md registration carries the whenToUse from the file`
+- `the swarm-engineering/developer.md registration carries the bundle as its source`
+- `the swarm-engineering/developer.md registration does not leak its frontmatter into the content`
+- `the swarm-engineering/tester.md registration carries its own body`
+- `the swarm-engineering/tester.md registration carries the note's skill block`
+- `the swarm-engineering/tester.md registration starts with the note's first block`
+- `the swarm-engineering/tester.md registration names this host in its catalog line`
+- `the swarm-engineering/tester.md catalog line keeps the file's own description byte for byte`
+- `the swarm-engineering/tester.md registration carries the whenToUse from the file`
+- `the swarm-engineering/tester.md registration carries the bundle as its source`
+- `the swarm-engineering/tester.md registration does not leak its frontmatter into the content`
+- `the swarm-engineering/reviewer.md registration carries its own body`
+- `the swarm-engineering/reviewer.md registration carries the note's skill block`
+- `the swarm-engineering/reviewer.md registration starts with the note's first block`
+- `the swarm-engineering/reviewer.md registration names this host in its catalog line`
+- `the swarm-engineering/reviewer.md catalog line keeps the file's own description byte for byte`
+- `the swarm-engineering/reviewer.md registration carries the whenToUse from the file`
+- `the swarm-engineering/reviewer.md registration carries the bundle as its source`
+- `the swarm-engineering/reviewer.md registration does not leak its frontmatter into the content`
+- `the swarm-engineering/languages/python.md registration carries its own body`
+- `the swarm-engineering/languages/python.md registration carries the note's skill block`
+- `the swarm-engineering/languages/python.md registration starts with the note's first block`
+- `the swarm-engineering/languages/python.md registration names this host in its catalog line`
+- `the swarm-engineering/languages/python.md catalog line keeps the file's own description byte for byte`
+- `the swarm-engineering/languages/python.md registration carries the whenToUse from the file`
+- `the swarm-engineering/languages/python.md registration carries the bundle as its source`
+- `the swarm-engineering/languages/python.md registration does not leak its frontmatter into the content`
 - `a change to runtime-note.md alone re-registers the skills`
 - `the re-registered skill carries the changed note`
 - `the re-registered skill keeps the user's body`
@@ -515,7 +515,7 @@ run or the proof it rests on.
 
 | # | Requirement | Verdict | Evidence |
 | --- | --- | --- | --- |
-| R1 | Five craft files ship under `skills/craft/`, each with the sections its design names | **met** | `method.test.mjs`: 20 checks (ships, not empty, top heading, sections in order) over the five files — all green in the run of §2 |
+| R1 | Five craft files ship under `skills/swarm-engineering/`, each with the sections its design names | **met** | `method.test.mjs`: 20 checks (ships, not empty, top heading, sections in order) over the five files — all green in the run of §2 |
 | R2 | `shared.md` carries the three checks 2.1–2.3, each with `**The principle.**`, `**In practice.**`, `**How you show it.**` | **met** | `craft: shared section 2 carries exactly the three checks 2.1 to 2.3` and the three per-check label checks — green |
 | R3 | `shared.md` carries the twelve pieces 3.1–3.12, each with at least one rule | **met** | `craft: shared section 3 carries exactly the twelve pieces 3.1 to 3.12` and `craft: shared every piece carries at least one rule` — green; proof 03 turns both red |
 | R4 | `shared.md` §4 names the other stacks and §5 says what the directory does not cover | **met** | `craft: shared section 4 carries the other stacks`, `craft: shared section 5 says what this directory does not cover` — green |
@@ -553,7 +553,7 @@ $env:ELECTRON_RUN_AS_NODE="1"; & "D:\software\dsh\DeepSeek Harness.exe" "<copy>\
 
 **Baseline of the copy, unmodified:** `ALL SUITES PASSED (6)`.
 
-### Proof 01 鈥?the five tokens in ``runtime-note.md`` are replaced with plain text, so no token is resolved into a path
+### Proof 01 —the five tokens in ``runtime-note.md`` are replaced with plain text, so no token is resolved into a path
 
 ```
 FAIL  craft: the coordinator view names shared.md by its resolved path
@@ -579,7 +579,7 @@ FAIL  crlf: a note with CRLF endings still names the craft files
 SUITE FAILED: render-prompt.test.mjs (exit 1)
 ```
 
-### Proof 02 鈥?``resolveNote`` hands the note back untouched (``return raw``), so the tokens reach the prompt as written
+### Proof 02 —``resolveNote`` hands the note back untouched (``return raw``), so the tokens reach the prompt as written
 
 ```
 FAIL  gating: no plugin marker survives in the coordinator view
@@ -623,7 +623,7 @@ FAIL  crlf: a note with CRLF endings still names the craft files
 SUITE FAILED: render-prompt.test.mjs (exit 1)
 ```
 
-### Proof 03 鈥?the heading ``### 3.5 State, data and its shape`` is deleted from ``skills/craft/shared.md``
+### Proof 03 —the heading ``### 3.5 State, data and its shape`` is deleted from ``skills/swarm-engineering/shared.md``
 
 ```
 FAIL  craft: shared section 3 carries exactly the twelve pieces 3.1 to 3.12
@@ -632,7 +632,7 @@ FAIL  craft: shared every piece carries at least one rule
 SUITE FAILED: method.test.mjs (exit 1)
 ```
 
-### Proof 04 鈥?the heading ``## 5. Prove the check can fail`` is deleted from ``skills/craft/tester.md``, so the role file loses a section
+### Proof 04 —the heading ``## 5. Prove the check can fail`` is deleted from ``skills/swarm-engineering/tester.md``, so the role file loses a section
 
 ```
 FAIL  craft: tester.md carries its sections in order
@@ -641,7 +641,7 @@ FAIL  craft: every tester.md section after section 1 carries at least one rule
 SUITE FAILED: method.test.mjs (exit 1)
 ```
 
-### Proof 05 鈥?the heading ``## 6. Errors`` is deleted from ``skills/craft/languages/python.md``, so the Python file loses a section
+### Proof 05 —the heading ``## 6. Errors`` is deleted from ``skills/swarm-engineering/languages/python.md``, so the Python file loses a section
 
 ```
 FAIL  craft: python.md carries its sections in order
@@ -651,7 +651,7 @@ FAIL  craft: every Python section carries at least one rule
 SUITE FAILED: method.test.mjs (exit 1)
 ```
 
-### Proof 06 鈥?the CRLF fix in ``index.js`` is reverted: ``const HEADING = /^(#{1,6})\s+(.+?)\s*$/`` becomes ``/^(#{1,6})\s+(.+)$/``
+### Proof 06 —the CRLF fix in ``index.js`` is reverted: ``const HEADING = /^(#{1,6})\s+(.+?)\s*$/`` becomes ``/^(#{1,6})\s+(.+)$/``
 
 ```
 FAIL  crlf: the worker view keeps the requirement handover section
@@ -663,7 +663,7 @@ FAIL  crlf: no section is reported missing
 SUITE FAILED: render-prompt.test.mjs (exit 1)
 ```
 
-### Proof 07 鈥?the guard in ``bundlePointer`` is dropped, so a missing craft file yields a path instead of the notice
+### Proof 07 —the guard in ``bundlePointer`` is dropped, so a missing craft file yields a path instead of the notice
 
 ```
 FAIL  craft: a missing craft file yields a notice that names it
@@ -672,7 +672,7 @@ FAIL  craft: a missing craft file yields no path
 SUITE FAILED: render-prompt.test.mjs (exit 1)
 ```
 
-### Proof 08 鈥?an unknown token is swallowed: ``if (!relativePath) return match`` becomes ``return bundlePointer(CRAFT_FILES.shared)``
+### Proof 08 —an unknown token is swallowed: ``if (!relativePath) return match`` becomes ``return bundlePointer(CRAFT_FILES.shared)``
 
 ```
 FAIL  craft: the coordinator view names developer.md by its resolved path
@@ -695,7 +695,7 @@ FAIL  crlf: a note with CRLF endings still names the craft files
 SUITE FAILED: render-prompt.test.mjs (exit 1)
 ```
 
-### Proof 09 鈥?host facts are injected into ``skills/craft/shared.md``: a plugin marker, the host name, ``runtime-note.md`` and a ``D:\`` path
+### Proof 09 —host facts are injected into ``skills/swarm-engineering/shared.md``: a plugin marker, the host name, ``runtime-note.md`` and a ``D:\`` path
 
 ```
 FAIL  craft: shared.md carries no plugin marker
@@ -707,7 +707,7 @@ FAIL  craft: shared.md names no D: path of this machine
 SUITE FAILED: method.test.mjs (exit 1)
 ```
 
-### Proof 10 鈥?the ``/swarm`` output stops naming the craft files (the five ``bundlePointer`` calls are replaced by words)
+### Proof 10 —the ``/swarm`` output stops naming the craft files (the five ``bundlePointer`` calls are replaced by words)
 
 ```
 FAIL  command: the /swarm output names the craft files by their resolved paths
@@ -715,7 +715,7 @@ FAIL  command: the /swarm output names the craft files by their resolved paths
 SUITE FAILED: render-prompt.test.mjs (exit 1)
 ```
 
-### Proof 11 鈥?the craft heading in the note is renamed: ``## The craft guidance on this host`` becomes ``## The craft files on this host``
+### Proof 11 —the craft heading in the note is renamed: ``## The craft guidance on this host`` becomes ``## The craft files on this host``
 
 ```
 FAIL  craft: the coordinator view carries the craft section
@@ -725,7 +725,7 @@ FAIL  craft: the registered skill carries the craft section
 SUITE FAILED: render-prompt.test.mjs (exit 1)
 ```
 
-### Proof 12 鈥?the craft block is narrowed to the Coordinator: its scope marker becomes ``<!-- swarm:note coordinator -->``
+### Proof 12 —the craft block is narrowed to the Coordinator: its scope marker becomes ``<!-- swarm:note coordinator -->``
 
 ```
 FAIL  craft: the worker view carries the craft section
@@ -747,7 +747,7 @@ FAIL  craft: the registered skill names the craft skills
 SUITE FAILED: render-prompt.test.mjs (exit 1)
 ```
 
-### Proof 13 鈥?the gate stops dropping unsatisfied bullets: ``isLineSatisfied`` returns true for every line
+### Proof 13 —the gate stops dropping unsatisfied bullets: ``isLineSatisfied`` returns true for every line
 
 ```
 FAIL  gating: the teammate bullet is gone on a minimal host
@@ -765,11 +765,11 @@ FAIL F4b an unreadable marker drops its bullet -> true (expected false)
 SUITE FAILED: gating.test.mjs (exit 1)
 ```
 
-### Proof 14 鈥?``skills/craft/tester.md`` loses its frontmatter, so the registration falls back to the plugin's default description
+### Proof 14 —``skills/swarm-engineering/tester.md`` loses its frontmatter, so the registration falls back to the plugin's default description
 
 ```
-FAIL the craft/tester.md catalog line keeps the file's own description byte for byte -> false (expected true)
-FAIL the craft/tester.md registration carries the whenToUse from the file -> "Use in a swarm lane that works on code: the craft guidance for the role in play." (expected undefined)
+FAIL the swarm-engineering/tester.md catalog line keeps the file's own description byte for byte -> false (expected true)
+FAIL the swarm-engineering/tester.md registration carries the whenToUse from the file -> "Use in a swarm lane that works on code: the craft guidance for the role in play." (expected undefined)
 FAIL the re-registered description carries the edited description -> false (expected true)
 3 CHECK(S) FAILED
 SUITE FAILED: skill-stamp.test.mjs (exit 1)
@@ -1150,46 +1150,46 @@ PASS the registered content carries the user's skill body -> true
 PASS the registered content leaves the coordinator's note out -> false
 PASS the registered content leaves the worker's note out -> false
 PASS the registered content is the body, not the frontmatter -> false
-PASS the craft/shared.md registration carries its own body -> true
-PASS the craft/shared.md registration carries the note's skill block -> true
-PASS the craft/shared.md registration starts with the note's first block -> true
-PASS the craft/shared.md registration names this host in its catalog line -> true
-PASS the craft/shared.md catalog line keeps the file's own description byte for byte -> true
-PASS the craft/shared.md registration carries the whenToUse from the file -> "Read in any lane before a non-trivial edit: the core the role files apply."
-PASS the craft/shared.md registration carries the bundle as its source -> "dsh-swarm-workflow"
-PASS the craft/shared.md registration does not leak its frontmatter into the content -> true
-PASS the craft/developer.md registration carries its own body -> true
-PASS the craft/developer.md registration carries the note's skill block -> true
-PASS the craft/developer.md registration starts with the note's first block -> true
-PASS the craft/developer.md registration names this host in its catalog line -> true
-PASS the craft/developer.md catalog line keeps the file's own description byte for byte -> true
-PASS the craft/developer.md registration carries the whenToUse from the file -> "Read in a Developer lane before it changes code."
-PASS the craft/developer.md registration carries the bundle as its source -> "dsh-swarm-workflow"
-PASS the craft/developer.md registration does not leak its frontmatter into the content -> true
-PASS the craft/tester.md registration carries its own body -> true
-PASS the craft/tester.md registration carries the note's skill block -> true
-PASS the craft/tester.md registration starts with the note's first block -> true
-PASS the craft/tester.md registration names this host in its catalog line -> true
-PASS the craft/tester.md catalog line keeps the file's own description byte for byte -> true
-PASS the craft/tester.md registration carries the whenToUse from the file -> "Read in a Tester lane before it writes or judges a check."
-PASS the craft/tester.md registration carries the bundle as its source -> "dsh-swarm-workflow"
-PASS the craft/tester.md registration does not leak its frontmatter into the content -> true
-PASS the craft/reviewer.md registration carries its own body -> true
-PASS the craft/reviewer.md registration carries the note's skill block -> true
-PASS the craft/reviewer.md registration starts with the note's first block -> true
-PASS the craft/reviewer.md registration names this host in its catalog line -> true
-PASS the craft/reviewer.md catalog line keeps the file's own description byte for byte -> true
-PASS the craft/reviewer.md registration carries the whenToUse from the file -> "Read in a Reviewer lane before it reviews a change."
-PASS the craft/reviewer.md registration carries the bundle as its source -> "dsh-swarm-workflow"
-PASS the craft/reviewer.md registration does not leak its frontmatter into the content -> true
-PASS the craft/languages/python.md registration carries its own body -> true
-PASS the craft/languages/python.md registration carries the note's skill block -> true
-PASS the craft/languages/python.md registration starts with the note's first block -> true
-PASS the craft/languages/python.md registration names this host in its catalog line -> true
-PASS the craft/languages/python.md catalog line keeps the file's own description byte for byte -> true
-PASS the craft/languages/python.md registration carries the whenToUse from the file -> "Read in any lane that changes Python code, before it changes it."
-PASS the craft/languages/python.md registration carries the bundle as its source -> "dsh-swarm-workflow"
-PASS the craft/languages/python.md registration does not leak its frontmatter into the content -> true
+PASS the swarm-engineering/shared.md registration carries its own body -> true
+PASS the swarm-engineering/shared.md registration carries the note's skill block -> true
+PASS the swarm-engineering/shared.md registration starts with the note's first block -> true
+PASS the swarm-engineering/shared.md registration names this host in its catalog line -> true
+PASS the swarm-engineering/shared.md catalog line keeps the file's own description byte for byte -> true
+PASS the swarm-engineering/shared.md registration carries the whenToUse from the file -> "Read in any lane before a non-trivial edit: the core the role files apply."
+PASS the swarm-engineering/shared.md registration carries the bundle as its source -> "dsh-swarm-workflow"
+PASS the swarm-engineering/shared.md registration does not leak its frontmatter into the content -> true
+PASS the swarm-engineering/developer.md registration carries its own body -> true
+PASS the swarm-engineering/developer.md registration carries the note's skill block -> true
+PASS the swarm-engineering/developer.md registration starts with the note's first block -> true
+PASS the swarm-engineering/developer.md registration names this host in its catalog line -> true
+PASS the swarm-engineering/developer.md catalog line keeps the file's own description byte for byte -> true
+PASS the swarm-engineering/developer.md registration carries the whenToUse from the file -> "Read in a Developer lane before it changes code."
+PASS the swarm-engineering/developer.md registration carries the bundle as its source -> "dsh-swarm-workflow"
+PASS the swarm-engineering/developer.md registration does not leak its frontmatter into the content -> true
+PASS the swarm-engineering/tester.md registration carries its own body -> true
+PASS the swarm-engineering/tester.md registration carries the note's skill block -> true
+PASS the swarm-engineering/tester.md registration starts with the note's first block -> true
+PASS the swarm-engineering/tester.md registration names this host in its catalog line -> true
+PASS the swarm-engineering/tester.md catalog line keeps the file's own description byte for byte -> true
+PASS the swarm-engineering/tester.md registration carries the whenToUse from the file -> "Read in a Tester lane before it writes or judges a check."
+PASS the swarm-engineering/tester.md registration carries the bundle as its source -> "dsh-swarm-workflow"
+PASS the swarm-engineering/tester.md registration does not leak its frontmatter into the content -> true
+PASS the swarm-engineering/reviewer.md registration carries its own body -> true
+PASS the swarm-engineering/reviewer.md registration carries the note's skill block -> true
+PASS the swarm-engineering/reviewer.md registration starts with the note's first block -> true
+PASS the swarm-engineering/reviewer.md registration names this host in its catalog line -> true
+PASS the swarm-engineering/reviewer.md catalog line keeps the file's own description byte for byte -> true
+PASS the swarm-engineering/reviewer.md registration carries the whenToUse from the file -> "Read in a Reviewer lane before it reviews a change."
+PASS the swarm-engineering/reviewer.md registration carries the bundle as its source -> "dsh-swarm-workflow"
+PASS the swarm-engineering/reviewer.md registration does not leak its frontmatter into the content -> true
+PASS the swarm-engineering/languages/python.md registration carries its own body -> true
+PASS the swarm-engineering/languages/python.md registration carries the note's skill block -> true
+PASS the swarm-engineering/languages/python.md registration starts with the note's first block -> true
+PASS the swarm-engineering/languages/python.md registration names this host in its catalog line -> true
+PASS the swarm-engineering/languages/python.md catalog line keeps the file's own description byte for byte -> true
+PASS the swarm-engineering/languages/python.md registration carries the whenToUse from the file -> "Read in any lane that changes Python code, before it changes it."
+PASS the swarm-engineering/languages/python.md registration carries the bundle as its source -> "dsh-swarm-workflow"
+PASS the swarm-engineering/languages/python.md registration does not leak its frontmatter into the content -> true
 PASS a change to runtime-note.md alone re-registers the skills -> 12
 PASS the re-registered skill carries the changed note -> true
 PASS the re-registered skill keeps the user's body -> true

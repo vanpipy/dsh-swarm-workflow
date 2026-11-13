@@ -30,11 +30,11 @@ const root = fileURLToPath(new URL('..', import.meta.url))
  * each one registers under and the heading of its body.
  */
 const CRAFT = [
-  { path: 'craft/shared.md', name: 'swarm-craft-shared', heading: '# The shared craft' },
-  { path: 'craft/developer.md', name: 'swarm-craft-developer', heading: "# The developer's craft" },
-  { path: 'craft/tester.md', name: 'swarm-craft-tester', heading: "# The tester's craft" },
-  { path: 'craft/reviewer.md', name: 'swarm-craft-reviewer', heading: "# The reviewer's craft" },
-  { path: 'craft/languages/python.md', name: 'swarm-craft-python', heading: '# The Python pieces' },
+  { path: 'swarm-engineering/shared.md', name: 'swarm-craft-shared', heading: '# The shared craft' },
+  { path: 'swarm-engineering/developer.md', name: 'swarm-craft-developer', heading: "# The developer's craft" },
+  { path: 'swarm-engineering/tester.md', name: 'swarm-craft-tester', heading: "# The tester's craft" },
+  { path: 'swarm-engineering/reviewer.md', name: 'swarm-craft-reviewer', heading: "# The reviewer's craft" },
+  { path: 'swarm-engineering/languages/python.md', name: 'swarm-craft-python', heading: '# The Python pieces' },
 ]
 
 let failures = 0
@@ -192,7 +192,7 @@ try {
   // description repeats the file's name, and the registered body has its
   // frontmatter stripped.
   const CRAFT_EDIT = ' (edited by the stamp test)'
-  const craftPath = join(sandbox, 'skills', 'craft', 'shared.md')
+  const craftPath = join(sandbox, 'skills', 'swarm-engineering', 'shared.md')
   writeFileSync(craftPath, readFileSync(craftPath, 'utf8').replace('# The shared craft', `# The shared craft${CRAFT_EDIT}`), 'utf8')
   render()
   check('a change to a craft file alone re-registers the skills', registrations.length, 24)
@@ -204,7 +204,7 @@ try {
   // The frontmatter is the file's catalog line: changing it changes the
   // description of the registration, and leaves the body alone.
   const DESCRIPTION_EDIT = ' (edited by the stamp test)'
-  const testerPath = join(sandbox, 'skills', 'craft', 'tester.md')
+  const testerPath = join(sandbox, 'skills', 'swarm-engineering', 'tester.md')
   writeFileSync(testerPath, readFileSync(testerPath, 'utf8').replace("description: The tester's craft", `description: The tester's craft${DESCRIPTION_EDIT}`), 'utf8')
   render()
   check('a change to a craft file\'s frontmatter re-registers the skills', registrations.length, 30)
@@ -225,8 +225,8 @@ try {
   check('the shipped runtime note does not carry the sandbox edit', readFileSync(join(root, 'runtime-note.md'), 'utf8').includes(NOTE_EDIT), false)
   check('the shipped skill file does not carry the sandbox edit', readFileSync(join(root, 'skills', 'swarm-engineering.md'), 'utf8').includes(SKILL_EDIT), false)
   check('the shipped policy does not carry the sandbox edit', readFileSync(join(root, 'prompt-overlay.md'), 'utf8').includes('stamp test: the overlay changed'), false)
-  check('the shipped craft file does not carry the sandbox edit', readFileSync(join(root, 'skills', 'craft', 'shared.md'), 'utf8').includes(CRAFT_EDIT), false)
-  check('the shipped tester craft file does not carry the sandbox edit', readFileSync(join(root, 'skills', 'craft', 'tester.md'), 'utf8').includes(DESCRIPTION_EDIT), false)
+  check('the shipped craft file does not carry the sandbox edit', readFileSync(join(root, 'skills', 'swarm-engineering', 'shared.md'), 'utf8').includes(CRAFT_EDIT), false)
+  check('the shipped tester craft file does not carry the sandbox edit', readFileSync(join(root, 'skills', 'swarm-engineering', 'tester.md'), 'utf8').includes(DESCRIPTION_EDIT), false)
 } catch (error) {
   failures += 1
   console.log(`FAIL the stamp suite could not run -> ${error.message}`)

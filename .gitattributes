@@ -16,8 +16,8 @@ skills/swarm-engineering.md -text
 # checkouts of the same bundle differ.
 runtime-note.md                    -text
 README.md                          -text
-skills/craft/shared.md             -text
-skills/craft/developer.md          -text
-skills/craft/tester.md             -text
-skills/craft/reviewer.md           -text
-skills/craft/languages/python.md   -text
+skills/swarm-engineering/shared.md           -text
+skills/swarm-engineering/developer.md        -text
+skills/swarm-engineering/tester.md           -text
+skills/swarm-engineering/reviewer.md         -text
+skills/swarm-engineering/languages/python.md -text

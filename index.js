@@ -69,11 +69,11 @@ const SKILL_FILE = './skills/swarm-engineering.md'
  * lane's role.
  */
 const CRAFT_FILES = {
-  shared: './skills/craft/shared.md',
-  developer: './skills/craft/developer.md',
-  tester: './skills/craft/tester.md',
-  reviewer: './skills/craft/reviewer.md',
-  python: './skills/craft/languages/python.md',
+  shared: './skills/swarm-engineering/shared.md',
+  developer: './skills/swarm-engineering/developer.md',
+  tester: './skills/swarm-engineering/tester.md',
+  reviewer: './skills/swarm-engineering/reviewer.md',
+  python: './skills/swarm-engineering/languages/python.md',
 }
 
 /**

@@ -135,8 +135,8 @@ The rule that path served still holds, in the form this host supports:
 <!-- swarm:note coordinator worker skill -->
 ## The craft guidance on this host
 
-The bundle ships the craft guidance under `skills/craft/`, one file per role,
-and this is where they are:
+The bundle ships the craft guidance under `skills/swarm-engineering/`, beside
+the skill itself, one file per role, and this is where they are:
 
 - the core every lane uses: `{{swarm:shared}}`
 - the developer's craft: `{{swarm:developer}}`
