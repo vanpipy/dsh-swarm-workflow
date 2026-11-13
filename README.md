@@ -297,7 +297,11 @@ re-registration stamp, which has to cover the runtime note, the skill file and
 every craft file (`skill-stamp.test.mjs`), and the craft wiring — that the note
 names the craft files, that each path is resolved where the bundle lives, that
 each craft file is registered as a skill of its own, and that a CRLF checkout
-still composes (`method.test.mjs`). The gating suite runs
+still composes (`method.test.mjs`). The method suite also reads the craft
+files themselves: it asserts that each of the five still carries the sections,
+the three checks, the twelve shared pieces and the nineteen Python sections its
+design names, and that every one of them stays host-neutral — no plugin marker,
+no host name, no machine path. The gating suite runs
 the same scenarios twice: against the host's real runtime when this machine
 has one, and against a local model of the host's service semantics
 (`test/lib/cordis-model.mjs`) when it does not — so the suite runs on a

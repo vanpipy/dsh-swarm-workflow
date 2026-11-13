@@ -10,7 +10,14 @@ import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
 const here = dirname(fileURLToPath(import.meta.url))
-const suites = ['render-prompt.test.mjs', 'swarm-tools.test.mjs', 'gating.test.mjs', 'verbatim.test.mjs', 'skill-stamp.test.mjs']
+const suites = [
+  'render-prompt.test.mjs',
+  'method.test.mjs',
+  'swarm-tools.test.mjs',
+  'gating.test.mjs',
+  'verbatim.test.mjs',
+  'skill-stamp.test.mjs',
+]
 
 let failed = 0
 for (const suite of suites) {
