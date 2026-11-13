@@ -16,7 +16,12 @@ rewritten for this host, and no host fact is written into the shipped text.
 | `prompt-overlay.md` | the user | the global execution policy |
 | `swarm-prompt.md` | the user | the delegation briefing: what to delegate, what a brief must carry, where a requirement lives |
 | `skills/swarm-engineering.md` | the user | the role methods, the assignment contract, requirement matching and handover |
-| `runtime-note.md` | the plugin | the only prose this plugin wrote: the host identity, the Jcode-to-DeepSeek-Harness surface map, the requirement carrier, the verification path, and the live capabilities of the session |
+| `runtime-note.md` | the plugin | the host note: the host identity, the Jcode-to-DeepSeek-Harness surface map, the requirement carrier, the verification path, and the live capabilities of the session |
+| `skills/craft/shared.md` | the plugin | the shared craft: the three checks that hold in every language, the pieces that shape the code, the other stacks |
+| `skills/craft/developer.md` | the plugin | the developer's craft: how a Developer applies the core to an edit |
+| `skills/craft/tester.md` | the plugin | the tester's craft: how a Tester applies the core to a check |
+| `skills/craft/reviewer.md` | the plugin | the reviewer's craft: how a Reviewer applies the core to a change |
+| `skills/craft/languages/python.md` | the plugin | the Python pieces: the idioms, the version floors, the traps |
 
 `runtime-note.md` is written in scope blocks, marked
 `<!-- swarm:note coordinator worker skill -->`. The plugin prepends the blocks
@@ -25,6 +30,18 @@ text it composes. The marker that gates a bullet on a tool
 (`<!-- swarm:requires subagent -->`) exists only in that file, so the shipped
 text stays free of host mechanics.
 
+The note also names the craft files where a lane has to read them. The paths
+are substituted at composition time, so they point at the copy of the bundle
+the session actually loaded — a profile install, a junction and a source
+checkout each get their own.
+
+Each craft file is also registered with the host as a skill, the way
+`skills/swarm-engineering.md` is, so a lane can load one by name instead of
+opening a file: `swarm-craft-shared`, `swarm-craft-developer`,
+`swarm-craft-tester`, `swarm-craft-reviewer` and `swarm-craft-python`. The name
+and the description live in the file's own frontmatter, so the catalog and the
+file never drift apart.
+
 ## What it adds
 
 | Surface | What it is |
@@ -32,6 +49,7 @@ text stays free of host mechanics.
 | Coordinator prompt | injected into the main agent's system prompt (`swarm-workflow:swarm`) |
 | Worker prompt | injected into every delegated agent |
 | `swarm-engineering` skill | the role methods, loaded on demand |
+| `swarm-craft-*` skills | the craft guidance: `swarm-craft-shared`, one per role (`developer`, `tester`, `reviewer`) and one per language (`python`) |
 | `swarm_worktree` | gives a lane its own Git worktree |
 | `swarm_task` | reads and updates the shared team board |
 | `swarm_child` | lists, steers and stops the delegated child lanes |
@@ -69,6 +87,57 @@ is written into the prompt in place of the marker in the runtime note, so the
 prompt states only the surfaces this session can actually call. A bullet whose
 tool is missing is dropped rather than shown, and a section the shipped file no
 longer contains is replaced by a visible notice rather than dropped silently.
+
+## The craft guidance
+
+The craft guidance is additive: the skill owns the process and the roles, the
+craft directory owns the craft. It sits beside the skill so a lane reads the
+process and the craft in the same place, and it carries one file per role.
+
+```
+skills/craft/
+  shared.md            the core every lane uses
+  developer.md         the developer's craft
+  tester.md            the tester's craft
+  reviewer.md          the reviewer's craft
+  languages/python.md  the language pieces
+```
+
+### `shared.md`
+
+| Section | What it is |
+| --- | --- |
+| 1 | how to use the directory, and which file owns the process and which the craft |
+| 2 | the three checks that hold in every language: make the check falsifiable, re-derive every number a second way, validate where the artifact runs |
+| 3 | the pieces that hold in every language: boundaries, types, errors, dependencies, state, time, the outside world, performance, tests, security, diagnostics, naming |
+| 4 | the same piece in another stack |
+| 5 | what the directory does not cover |
+
+### The role files
+
+| File | What it is |
+| --- | --- |
+| `developer.md` | name the target before the edit, shape the change, make the code say what it means, prove it as you go, the language pieces |
+| `tester.md` | choose the oracle, make the check discriminate, cover the boundary rather than the middle, prove the check can fail, report honestly |
+| `reviewer.md` | read the change as a claim, re-derive the evidence yourself, the review smells, hunt the check that cannot fail, name what you did not check, the severity vocabulary |
+
+### `languages/python.md`
+
+Nineteen sections, one per topic: the surface and the version floor, typing,
+data modelling, collections, iteration and laziness, errors, resources, files
+and paths, the shell and the outside world, time and clocks, concurrency,
+testing, the command line, performance, style and docstrings, dependencies and
+environments, logging and diagnostics, security, and the common traps. A
+language that deserves its own file gets one beside it.
+
+The craft reaches the lanes by path and by name. The runtime note names the
+files where the Coordinator writes a brief and where a lane reads them, and
+every file is registered as a skill, so a brief names the skill and the piece
+that applies to the lane's role — "load `swarm-craft-developer`, section 3,
+before you change a module boundary". A brief that gives a lane a role and no
+piece leaves the lane guessing what good looks like. The files are never
+composed into a prompt: a lane loads the skill, or opens the file, and reads
+the piece it needs.
 
 ## The workflow
 
@@ -200,8 +269,13 @@ not the install route.
 index.js                      the plugin: prompt section, skill, tools, /swarm command
 prompt-overlay.md             the global execution policy (the user's text, verbatim)
 swarm-prompt.md               the delegation briefing (the user's text, verbatim)
-runtime-note.md               the host note: the only prose the plugin wrote
+runtime-note.md               the host note: the host facts this plugin wrote
 skills/swarm-engineering.md   the role methods (the user's text, verbatim)
+skills/craft/shared.md         the shared craft every lane uses (the plugin's prose)
+skills/craft/developer.md      the developer's craft (the plugin's prose)
+skills/craft/tester.md         the tester's craft (the plugin's prose)
+skills/craft/reviewer.md       the reviewer's craft (the plugin's prose)
+skills/craft/languages/        the language pieces, one file per language
 cordis.patch.yml              the profile row (id: swarm-workflow)
 client.js, locale/, icon.svg  the Web-GUI side
 test/                         the suite that travels with the bundle
@@ -219,8 +293,11 @@ fails. The suites under `test/` cover the prompt composition and gating
 (`swarm-tools.test.mjs`), the parsing and registration timing (`gating.test.mjs`),
 the verbatim guarantee — that the shipped text still carries the user's
 own anchors and none of the host's (`verbatim.test.mjs`) — and the skill
-re-registration stamp, which has to cover both the skill file and the runtime
-note (`skill-stamp.test.mjs`). The gating suite runs
+re-registration stamp, which has to cover the runtime note, the skill file and
+every craft file (`skill-stamp.test.mjs`), and the craft wiring — that the note
+names the craft files, that each path is resolved where the bundle lives, that
+each craft file is registered as a skill of its own, and that a CRLF checkout
+still composes (`method.test.mjs`). The gating suite runs
 the same scenarios twice: against the host's real runtime when this machine
 has one, and against a local model of the host's service semantics
 (`test/lib/cordis-model.mjs`) when it does not — so the suite runs on a
@@ -237,3 +314,9 @@ machine with no DSH host at all.
 * The execution policy, the delegation briefing and the skill text are shipped
   verbatim. Every host-specific fact lives in `runtime-note.md`, and the plugin
   composes a view of the shipped text instead of editing it.
+* The files under `skills/craft/` are plugin prose as well: the craft
+  guidance, kept in their own directory so it can grow without touching the
+  note or the user's text. The note names them, every brief names the file and
+  the piece that applies, each one is registered as a skill of its own, and
+  they are never composed into a prompt — a lane loads the skill it was
+  pointed at.

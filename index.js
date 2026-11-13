@@ -22,6 +22,7 @@
  * this session can actually call.
  */
 import { readFileSync, statSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 
 /**
  * Services this plugin needs: prompt assembly, the live agent registry, and the
@@ -49,15 +50,31 @@ const SECTION_ORDER = 8000
 const SKILL_SOURCE = 'dsh-swarm-workflow'
 
 /**
- * The four bundled markdown files, relative to this module.
+ * The bundled markdown files, relative to this module.
  *
- * Three of them are the user's own text and are only ever read; the runtime
- * note is the plugin's own file and carries every host-specific fact.
+ * Four of them are composed into the prompts: three are the user's own text
+ * and are only ever read, and the runtime note is the plugin's own file and
+ * carries every host-specific fact. The craft files are the guidance the note
+ * points at; they are named, not composed.
  */
 const RUNTIME_NOTE = './runtime-note.md'
 const PROMPT_OVERLAY = './prompt-overlay.md'
 const SWARM_BRIEF = './swarm-prompt.md'
 const SKILL_FILE = './skills/swarm-engineering.md'
+/**
+ * The craft files that ship with this bundle, relative to this module.
+ *
+ * One file per role, one shared core, and one file per language. The note
+ * names them, and a brief names the file and the piece that applies to the
+ * lane's role.
+ */
+const CRAFT_FILES = {
+  shared: './skills/craft/shared.md',
+  developer: './skills/craft/developer.md',
+  tester: './skills/craft/tester.md',
+  reviewer: './skills/craft/reviewer.md',
+  python: './skills/craft/languages/python.md',
+}
 
 /**
  * The heading that ends the worker's share of the global execution policy.
@@ -88,7 +105,7 @@ const WORKER_SKILL_SECTIONS = [
 const NOTE_MARKER = /^\s*<!--\s*swarm:note\s+([a-z\s]+)-->\s*$/
 
 /** A markdown heading, with the level it carries. */
-const HEADING = /^(#{1,6})\s+(.+)$/
+const HEADING = /^(#{1,6})\s+(.+?)\s*$/
 
 /**
  * The number a heading may carry in front of its text.
@@ -102,6 +119,15 @@ const HEADING_NUMBER = /^\d+(?:\.\d+)*[A-Za-z]?\.?\s+/
 
 /** Line the plugin replaces with the live capability block. */
 const CAPABILITY_MARKER = '<!-- swarm:capabilities -->'
+
+/**
+ * The token the runtime note uses where it names a craft file.
+ *
+ * The note is written once and read by every audience, but the bundle can be
+ * installed under a profile directory, a junction or the source tree, so the
+ * path of a craft file is resolved where the module actually lives.
+ */
+const CRAFT_TOKEN = /\{\{swarm:([a-z-]+)\}\}/g
 
 /**
  * Trailing marker that ties one prompt bullet to the tools it talks about.
@@ -144,6 +170,28 @@ const DEFAULT_SKILL_DESCRIPTION =
 
 /** The prefix readText uses when a bundled file cannot be read. */
 const FILE_ERROR_PREFIX = '> **The swarm bundle file'
+
+/** When the swarm-engineering skill is worth loading. */
+const MAIN_WHEN_TO_USE =
+  'Use before non-trivial engineering work in a swarm: leading and briefing subagents, reviewing their results, or executing a delegated task.'
+
+/** When a craft file without its own `whenToUse` is worth loading. */
+const DEFAULT_WHEN_TO_USE =
+  'Use in a swarm lane that works on code: the craft guidance for the role in play.'
+
+/**
+ * The skill name a bundled file gets when its frontmatter carries none.
+ *
+ * The name has to be unique across the catalog, so a craft file falls back to
+ * its own kind and its own base name.
+ * @param {string} file - the bundled file, relative to this module.
+ * @returns {string} the fallback skill name.
+ */
+function fallbackSkillName(file) {
+  if (file === SKILL_FILE) return 'swarm-engineering'
+  const base = file.split('/').pop()?.replace(/\.md$/, '') ?? 'craft'
+  return `swarm-craft-${base}`
+}
 
 /**
  * The host note prepended to the skill's registered description.
@@ -229,12 +277,14 @@ function readText(relativePath) {
  * The skill file keeps the standard frontmatter shape, so its name and
  * description live in one place instead of being duplicated in this module.
  * @param {string} raw - the raw file content.
- * @returns {{ name: string, description: string, content: string }} the parsed skill.
+ * @param {string} [fallbackName] - the name used when the file has no frontmatter.
+ * @param {string} [fallbackDescription] - the description used when the file has none.
+ * @returns {{ name: string, description: string, whenToUse: string | null, content: string }} the parsed skill.
  */
-function parseSkillFile(raw) {
+function parseSkillFile(raw, fallbackName = 'swarm-engineering', fallbackDescription = DEFAULT_SKILL_DESCRIPTION) {
   const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(raw)
   if (match === null) {
-    return { name: 'swarm-engineering', description: DEFAULT_SKILL_DESCRIPTION, content: raw }
+    return { name: fallbackName, description: fallbackDescription, whenToUse: null, content: raw }
   }
   const fields = {}
   for (const line of match[1].split(/\r?\n/)) {
@@ -242,12 +292,15 @@ function parseSkillFile(raw) {
     if (field !== null) fields[field[1].toLowerCase()] = field[2].trim()
   }
   return {
-    name: fields.name ?? 'swarm-engineering',
+    name: fields.name ?? fallbackName,
     // A skill without a description is refused by the host, and that refusal
     // would abort the whole plugin — the prompt section included.
     description: fields.description === undefined || fields.description.length === 0
-      ? DEFAULT_SKILL_DESCRIPTION
+      ? fallbackDescription
       : fields.description,
+    whenToUse: fields.whentouse === undefined || fields.whentouse.length === 0
+      ? null
+      : fields.whentouse,
     content: raw.slice(match[0].length),
   }
 }
@@ -381,6 +434,55 @@ function bundleName(path) {
 }
 
 /**
+ * The absolute path of a file that ships with this bundle.
+ *
+ * The note names a craft file and a lane has to be able to open it, so the
+ * path is resolved where the module actually lives rather than where the note
+ * happens to be read from.
+ * @param {string} relativePath - the path of the bundled file, relative to this module.
+ * @returns {string} the absolute path.
+ */
+function bundlePath(relativePath) {
+  return fileURLToPath(new URL(relativePath, import.meta.url))
+}
+
+/**
+ * The text the note carries where it names a craft file.
+ *
+ * When a craft file is missing, the note says so instead of pointing at a path
+ * that opens nothing.
+ * @param {string} relativePath - the path of the bundled file, relative to this module.
+ * @returns {string} the absolute path, or the notice that stands in for it.
+ */
+function bundlePointer(relativePath) {
+  try {
+    statSync(new URL(relativePath, import.meta.url))
+  } catch {
+    return `**the file \`${bundleName(relativePath)}\` is missing from this bundle**`
+  }
+  return bundlePath(relativePath)
+}
+
+/**
+ * The runtime note with the bundle's own paths substituted into it.
+ *
+ * Every token the note carries is replaced by the path of the craft file it
+ * names, so the lane is pointed at the copy that ships with this bundle and
+ * not at a path that only existed on the machine that wrote the note.
+ * @param {string} raw - the raw runtime note.
+ * @returns {string} the note, with every craft token replaced.
+ */
+function resolveNote(raw) {
+  return raw.replace(CRAFT_TOKEN, (match, key) => {
+    const relativePath = CRAFT_FILES[key]
+    // A token this bundle does not know is left alone, so the gap is visible
+    // in the prompt instead of silently becoming an empty string.
+    if (!relativePath) return match
+    return bundlePointer(relativePath)
+  })
+}
+
+/**
  * The notice that stands in for a section the shipped file no longer carries.
  *
  * A section that quietly disappears reads as "there is nothing to read here",
@@ -410,7 +512,7 @@ function missingSectionNotice(file, title) {
  */
 export function composeCoordinatorPrompt(input) {
   const parts = [
-    ...noteBlocks(input?.note ?? '', 'coordinator'),
+    ...noteBlocks(resolveNote(input?.note ?? ''), 'coordinator'),
     input?.overlay ?? '',
     input?.brief ?? '',
   ].filter((part) => part.length > 0)
@@ -436,7 +538,7 @@ export function composeWorkerPrompt(input) {
     return section ?? missingSectionNotice(bundleName(SKILL_FILE), title)
   })
   const parts = [
-    ...noteBlocks(input?.note ?? '', 'worker'),
+    ...noteBlocks(resolveNote(input?.note ?? ''), 'worker'),
     policy ?? missingSectionNotice(bundleName(PROMPT_OVERLAY), WORKER_OVERLAY_CUT),
     ...sections,
   ].filter((part) => part.length > 0)
@@ -1289,49 +1391,62 @@ export function buildSwarmTools(ctx) {
  */
 export function apply(ctx) {
   let skillStamp = null
-  let skillDisposer = null
+  let skillDisposers = []
   let commandRegistered = false
 
   /**
-   * Register the skill, and re-register it when its file changed on disk.
+   * Register the skills, and re-register them when their files changed on disk.
+   *
+   * The bundle ships the swarm-engineering skill and the craft guidance, and
+   * the craft files are registered the same way the skill is: the catalog is
+   * what an agent reads before it decides to load one, and a lane that can
+   * load the developer's craft does not need a path in its brief.
    * @returns {void}
    */
-  const syncSkill = () => {
-    const raw = readText(SKILL_FILE)
+  const syncSkills = () => {
+    const files = [SKILL_FILE, ...Object.values(CRAFT_FILES)]
     const note = readText(RUNTIME_NOTE)
-    // The registered content is the note's skill blocks plus the skill body,
-    // so the stamp has to cover both files: a change to either one changes
-    // what the skill says.
-    const stamp = `${fileCache.get(SKILL_FILE)?.stamp ?? 'missing'}:${fileCache.get(RUNTIME_NOTE)?.stamp ?? 'missing'}`
+    // Every file is read before the stamp is built: the stamp comes from the
+    // file cache, so a file that was not read yet would stamp as "missing" and
+    // the next pass would read as a change that never happened.
+    const bodies = files.map((file) => readText(file))
+    // The registered content is the note's skill blocks plus the file body, so
+    // the stamp has to cover every file: a change to any one of them changes
+    // what a lane reads.
+    const stamp = [
+      ...files.map((file) => `${file}:${fileCache.get(file)?.stamp ?? 'missing'}`),
+      `${RUNTIME_NOTE}:${fileCache.get(RUNTIME_NOTE)?.stamp ?? 'missing'}`,
+    ].join('|')
     if (stamp === skillStamp) return
     skillStamp = stamp
-    if (skillDisposer !== null) {
-      skillDisposer()
-      skillDisposer = null
+    for (const disposer of skillDisposers) disposer()
+    skillDisposers = []
+    const hostBlocks = [...noteBlocks(resolveNote(note), 'skill')].join('\n\n')
+    for (const [index, file] of files.entries()) {
+      const parsed = parseSkillFile(bodies[index], fallbackSkillName(file), DEFAULT_SKILL_DESCRIPTION)
+      const content = [hostBlocks, parsed.content].join('\n\n')
+      const disposer = ctx.skills.register({
+        name: parsed.name,
+        // The description in the file is the file's own text and stays byte for
+        // byte; the runtime this plugin runs on is named in front of it,
+        // because the catalog line is what an agent reads before it decides to
+        // load the skill.
+        description: HOST_NOTE + parsed.description,
+        content,
+        source: SKILL_SOURCE,
+        whenToUse: file === SKILL_FILE
+          ? MAIN_WHEN_TO_USE
+          : parsed.whenToUse ?? DEFAULT_WHEN_TO_USE,
+      })
+      if (typeof disposer === 'function') skillDisposers.push(disposer)
     }
-    const skill = parseSkillFile(raw)
-    const content = [...noteBlocks(note, 'skill'), skill.content].join('\n\n')
-    const disposer = ctx.skills.register({
-      name: skill.name,
-      // The description in the file is the user's own text and stays byte for
-      // byte; the runtime this plugin runs on is named in front of it,
-      // because the catalog line is what an agent reads before it decides to
-      // load the skill.
-      description: HOST_NOTE + skill.description,
-      content,
-      source: SKILL_SOURCE,
-      whenToUse: 'Use before non-trivial engineering work in a swarm: leading and briefing subagents, reviewing their results, or executing a delegated task.',
-    })
-    skillDisposer = typeof disposer === 'function' ? disposer : null
   }
 
   ctx.effect(() => {
-    syncSkill()
+    syncSkills()
     return () => {
-      if (skillDisposer !== null) {
-        skillDisposer()
-        skillDisposer = null
-      }
+      for (const disposer of skillDisposers) disposer()
+      skillDisposers = []
     }
   })
 
@@ -1366,7 +1481,7 @@ export function apply(ctx) {
     interpolate: false,
     text: (context) => {
       try {
-        syncSkill()
+        syncSkills()
       } catch {
         // A skill that cannot be re-registered must not break the prompt.
       }
@@ -1419,7 +1534,7 @@ export function apply(ctx) {
           const block = capabilityBlock(names, { referenced, command: true })
           return {
             kind: 'success',
-            text: `${block}\n\nThe Coordinator drives the swarm: open a session goal, give every parallel lane its own files, and delegate with the surfaces listed above. The \`swarm-engineering\` skill carries the role methods — Developer, Tester, Reviewer, and the runtime note carries this host's facts.`,
+            text: `${block}\n\nThe Coordinator drives the swarm: open a session goal, give every parallel lane its own files, and delegate with the surfaces listed above. The \`swarm-engineering\` skill carries the role methods — Developer, Tester, Reviewer, and the runtime note carries this host's facts. Every brief names the craft guidance for its lane; the craft files that ship with this bundle are ${bundlePointer(CRAFT_FILES.shared)}, ${bundlePointer(CRAFT_FILES.developer)}, ${bundlePointer(CRAFT_FILES.tester)}, ${bundlePointer(CRAFT_FILES.reviewer)} and ${bundlePointer(CRAFT_FILES.python)}.`,
           }
         },
       })

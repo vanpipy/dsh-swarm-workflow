@@ -132,6 +132,44 @@ The rule that path served still holds, in the form this host supports:
 - One independent verification run at acceptance. A second one is the user's
   to start from their own composer, because the agent cannot type it there.
 
+<!-- swarm:note coordinator worker skill -->
+## The craft guidance on this host
+
+The bundle ships the craft guidance under `skills/craft/`, one file per role,
+and this is where they are:
+
+- the core every lane uses: `{{swarm:shared}}`
+- the developer's craft: `{{swarm:developer}}`
+- the tester's craft: `{{swarm:tester}}`
+- the reviewer's craft: `{{swarm:reviewer}}`
+- the Python pieces: `{{swarm:python}}`
+
+Each of them is registered with the host the way `swarm-engineering.md` is, so
+a lane loads one by name instead of opening a file:
+
+- `swarm-craft-shared` — the core every lane uses
+- `swarm-craft-developer` — the developer's craft
+- `swarm-craft-tester` — the tester's craft
+- `swarm-craft-reviewer` — the reviewer's craft
+- `swarm-craft-python` — the Python pieces
+
+It is the craft guidance every lane works by — the checks that hold in every
+language, the pieces that shape the code, what a reviewer looks for, and the
+idioms of the language in play. It is plugin prose, not the user's policy: the
+policy still binds, and the craft tells a lane how to work inside it.
+
+- A brief names the file and the piece that applies to the lane's role: the
+  developer's craft for an implementation lane, the tester's craft for a
+  verification lane, the reviewer's craft for a review lane, and the language
+  file for the language in play. A brief that gives a lane a role and no piece
+  leaves the lane guessing what good looks like.
+- A lane reads the file before it changes anything, and applies it while it
+  works, not afterwards.
+- The shared file holds the core: the three checks, the pieces that hold in
+  every language, the other stacks. The role files say how each role applies
+  that core. The language file holds the language pieces, one section per
+  topic.
+
 <!-- swarm:note coordinator worker -->
 ## Live capabilities of this session
 
@@ -164,6 +202,7 @@ The surfaces this host offers, and the Jcode surface each one replaces:
 - `swarm_worktree` — a retained Git worktree, so a lane gets files of its own instead of editing a shared tree. <!-- swarm:requires swarm_worktree -->
 - `ask_user_question` — put an open product decision in front of the human before you delegate it. <!-- swarm:requires ask_user_question -->
 - `.swarm/` in the workspace of the work item — where the requirement set, the decisions and the lane reports are written. Write the requirement file before you dispatch the first lane.
+- The craft guidance every lane works by, registered as a skill so a brief can name it: `swarm-craft-shared`, `swarm-craft-developer`, `swarm-craft-tester`, `swarm-craft-reviewer` and `swarm-craft-python` — the files behind them are `{{swarm:shared}}`, `{{swarm:developer}}`, `{{swarm:tester}}`, `{{swarm:reviewer}}` and `{{swarm:python}}`.
 
 The acceptance decision is yours. A worker's report is evidence, not
 acceptance: inspect the integrated change yourself, and confirm the original
@@ -177,6 +216,7 @@ task on the shared board; it is the only thing you act on.
 
 - The `swarm-engineering` skill is registered for you. Load it before non-trivial work: it carries the role method for your role, the assignment and reporting contract, requirement matching and requirement handover. <!-- swarm:requires skill -->
 - The sections of that skill a lane cannot infer from the assignment alone are quoted verbatim below, so you have them even if you never load the skill.
+- The craft guidance your role works by: load `swarm-craft-shared`, the skill named after your role — `swarm-craft-developer`, `swarm-craft-tester` or `swarm-craft-reviewer` — and `swarm-craft-python` for the language in play. The files behind them are `{{swarm:shared}}`, `{{swarm:developer}}`, `{{swarm:tester}}`, `{{swarm:reviewer}}` and `{{swarm:python}}`. Read the piece that matches what you are changing before you change it, and apply it while you work, not afterwards.
 - The shared board holds your assignment. Read it with `swarm_task`, or with `team_task_get` when you are a native teammate; a lane that is not a team member reads it read-only and reports what it read. <!-- swarm:requires swarm_task -->
 - `swarm_worktree` gives you a tree of your own instead of a shared one. <!-- swarm:requires swarm_worktree -->
 - `swarm_child` reaches your own child lanes, if you ever have any. <!-- swarm:requires swarm_child -->

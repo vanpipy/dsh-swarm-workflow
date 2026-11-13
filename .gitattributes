@@ -7,3 +7,17 @@
 prompt-overlay.md           -text
 swarm-prompt.md             -text
 skills/swarm-engineering.md -text
+
+# The plugin's own markdown is kept the same way.
+#
+# The runtime note is composed into a prompt and the craft files are registered
+# as skills, so their bytes are what a lane reads. A CRLF conversion would put
+# a stray carriage return into every composed line, and it would make two
+# checkouts of the same bundle differ.
+runtime-note.md                    -text
+README.md                          -text
+skills/craft/shared.md             -text
+skills/craft/developer.md          -text
+skills/craft/tester.md             -text
+skills/craft/reviewer.md           -text
+skills/craft/languages/python.md   -text

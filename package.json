@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "private": true,
   "type": "module",
-  "description": "Ships the swarm execution policy verbatim: injects the global execution policy into the Coordinator, a scoped view of it plus the role methods into every delegated lane, and registers the swarm-engineering skill. Every host-specific fact lives in runtime-note.md.",
+  "description": "Ships the swarm execution policy verbatim: injects the global execution policy into the Coordinator, a scoped view of it plus the role methods into every delegated lane, and registers the swarm-engineering skill. Every host-specific fact lives in runtime-note.md, and the craft guidance for the lanes lives in skills/craft/.",
   "exports": {
     ".": "./index.js",
     "./client": "./client.js",
@@ -12,9 +12,9 @@
     "./prompt-overlay.md": "./prompt-overlay.md",
     "./runtime-note.md": "./runtime-note.md",
     "./swarm-prompt.md": "./swarm-prompt.md",
-    "./skills/*.md": "./skills/*.md"
+    "./skills/*": "./skills/*"
   },
-  "files": ["index.js", "client.js", "cordis.patch.yml", "locale/*.json", "icon.svg", "prompt-overlay.md", "runtime-note.md", "swarm-prompt.md", "skills/*.md", "test/"],
+  "files": ["index.js", "client.js", "cordis.patch.yml", "locale/*.json", "icon.svg", "prompt-overlay.md", "runtime-note.md", "swarm-prompt.md", "skills/", "test/"],
   "scripts": {
     "test": "node test/run.mjs"
   },
