@@ -1,0 +1,21 @@
+﻿{
+  "annotation_coverage": 1.0,
+  "avg_function_length": 6.4,
+  "docstring_coverage": 1.0,
+  "duplicate_line_ratio": 0.0,
+  "max_function_length": 18,
+  "max_nesting_depth": 1,
+  "module_docstring_coverage": 1.0,
+  "package_modules": 5,
+  "public_function_names": [
+    "main",
+    "normalize_ws",
+    "summarize",
+    "tokenize",
+    "word_frequency"
+  ],
+  "public_functions": 5,
+  "public_functions_without_tests": [],
+  "public_functions_without_tests_count": 0,
+  "test_functions": 9
+}

@@ -1,18 +1,46 @@
 # The validation record
 
-Two test beds were run against this bundle. This folder is their evidence: the
+Three test beds were run against this bundle. This folder is their evidence: the
 requirement sets, the specifications and contracts the lanes implemented, the
 decisions taken along the way, every lane report, and the acceptance report
 that closes each phase.
 
-The test beds themselves are **not** in this repository. They are local working
-repositories, each with its own history, and they are not published:
+The test beds themselves are **not** in this repository. They were local working
+repositories, each with its own history, and they have been removed:
 
 - `D:\project\swarm-craft-lab` — the craft test bed.
 - `D:\project\swarm-mixed-lab` — the five-language test bed.
+- `D:\project\swarm-lab-python` — the first phase's test bed, with its control arm.
 
 What is here is the part worth keeping: what was asked, what was decided, what
 each lane actually did, and what could not be shown.
+
+---
+
+## swarm-lab — the first phase: the workflow, the DSH surfaces and code quality
+
+Ten rounds over a small Python package, with a single-shot control arm to
+measure the agentic path against, and a live probe that applies the installed
+bundle to the real host runtime.
+
+| File | What it holds |
+|---|---|
+| `requirements.md` | R1 to R10, each with its own check |
+| `decision-cli-multiple-files.md` | the user's decision: one summary per file |
+| `decision-worktree-boundary.md` | the user's decision: `swarm_worktree` stays disabled, recorded as a verified boundary |
+| `acceptance.md` | **the verdict**, the DSH feature matrix, the quality comparison and what was not verified |
+| `report-developer.md`, `report-tester.md`, `report-reviewer.md`, `report-remediation.md` | the four lanes of the first phase |
+| `report-r10.md`, `report-r9-primitives.md` | the feature round and the primitives round |
+| `report-workflow*.md` | the `workflow` fan-out: three lanes and the merge |
+| `quality-comparison.md` / `.json`, `quality-r2.json`, `quality-r2b.json` | the instrument's measurements, both arms, both rounds |
+| `tools/quality_report.py` | the quality instrument: coverage, function length, nesting, duplicate ratio, untested public functions |
+| `tools/quality_compare.py` | the comparison driver: it runs the same instrument in two trees |
+| `tools/host_prompt_probe.mjs` | the live probe: it loads the **installed** bundle onto the real host cordis runtime and prints the composed prompts, the skill registrations and the `/swarm` output |
+
+Two findings from that phase are worth keeping in view: the live probe is what
+caught the double registration caused by a stamp computed before the files were
+read, and the reviewer's two material findings were both checks that could not
+fail.
 
 ---
 
@@ -34,6 +62,7 @@ were finished.
 | `report-control-arm.md` | the control arm's report |
 | `report-tester.md` | the independent conformance suite: 40 checks, 43 deliberate mutations |
 | `report-reviewer.md` | the independent review: findings F1 to F7 |
+| `hidden-cases.py` | the hidden case set — 16 cases, kept outside the test bed so neither arm could read it |
 | `acceptance.md` | **the verdict**, the measured difference, and the boundary of what the comparison supports |
 
 The result in one line: both arms are correct on the visible surface, the craft
@@ -66,6 +95,23 @@ The result in one line: the three languages this host can execute (Python,
 TypeScript, Java) produce byte-identical output, and one material divergence
 stays open on purpose — Go accepts an unknown record key where the other four
 reject it, and no Go toolchain exists here to fix it and prove the fix.
+
+---
+
+## audit-rounds and provenance — the earlier audit of this bundle's own text
+
+Before the two test phases, this bundle's shipped text was audited against the
+host it runs on: the wording of the policy, the claims about the runtime, the
+citations inside the skill, and the code pointers in the runtime note. Those
+rounds left their documents behind, and they are kept here because they are the
+reason several phrases in the shipped files read the way they do.
+
+| File | What it holds |
+|---|---|
+| `audit-rounds/*.md` | the round documents: the audits (`AUDIT.md`, `AUDIT-CODE.md`, `AUDIT-TEXT.md`, `AUDIT-REVIEW.md`), the design set (`DESIGN-*`), the test-round set (`HT-*`, `HT2-*`), the verdicts (`FINAL-VERDICT.md`, `FINAL-REVIEW-2026-11-10.md`, `HT2-VERDICT.md`, `REVIEW-verdict.md`), the findings and fixes, the rename and install notes, and the team protocol |
+| `audit-rounds/briefs/*.md` | the briefs the audit lanes were given |
+| `audit-rounds/tools/` | the checkers those rounds used: citation and pointer checks, the mutation scripts, the probes, and the round's own test copies |
+| `provenance/user-skill-paste.md` | the user's original paste of the role-methods text — the source of `skills/swarm-engineering/swarm-engineering.md`, which is shipped byte for byte |
 
 ---
 

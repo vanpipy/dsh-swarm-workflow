@@ -1,0 +1,117 @@
+{
+  "comparison": [
+    {
+      "control": 5,
+      "metric": "package_modules",
+      "verdict": "same",
+      "workflow": 5
+    },
+    {
+      "control": 5,
+      "metric": "public_functions",
+      "verdict": "same",
+      "workflow": 5
+    },
+    {
+      "control": 1.0,
+      "metric": "annotation_coverage",
+      "verdict": "same",
+      "workflow": 1.0
+    },
+    {
+      "control": 1.0,
+      "metric": "docstring_coverage",
+      "verdict": "same",
+      "workflow": 1.0
+    },
+    {
+      "control": 1.0,
+      "metric": "module_docstring_coverage",
+      "verdict": "same",
+      "workflow": 1.0
+    },
+    {
+      "control": 0,
+      "metric": "public_functions_without_tests_count",
+      "verdict": "same",
+      "workflow": 0
+    },
+    {
+      "control": 15.8,
+      "metric": "avg_function_length",
+      "verdict": "better",
+      "workflow": 5.6
+    },
+    {
+      "control": 25,
+      "metric": "max_function_length",
+      "verdict": "better",
+      "workflow": 14
+    },
+    {
+      "control": 3,
+      "metric": "max_nesting_depth",
+      "verdict": "better",
+      "workflow": 2
+    },
+    {
+      "control": 0.1048,
+      "metric": "duplicate_line_ratio",
+      "verdict": "better",
+      "workflow": 0.0
+    },
+    {
+      "control": 42,
+      "metric": "test_functions",
+      "verdict": "better",
+      "workflow": 51
+    }
+  ],
+  "control": {
+    "annotation_coverage": 1.0,
+    "avg_function_length": 15.8,
+    "docstring_coverage": 1.0,
+    "duplicate_line_ratio": 0.1048,
+    "max_function_length": 25,
+    "max_nesting_depth": 3,
+    "module_docstring_coverage": 1.0,
+    "package_modules": 5,
+    "public_function_names": [
+      "main",
+      "normalize_ws",
+      "summarize",
+      "tokenize",
+      "word_frequency"
+    ],
+    "public_functions": 5,
+    "public_functions_without_tests": [],
+    "public_functions_without_tests_count": 0,
+    "test_cases": 43,
+    "test_functions": 42
+  },
+  "control_root": "D:\\project\\swarm-lab-control",
+  "instrument": "tools/quality_report.py",
+  "workflow": {
+    "annotation_coverage": 1.0,
+    "avg_function_length": 5.6,
+    "docstring_coverage": 1.0,
+    "duplicate_line_ratio": 0.0,
+    "max_function_length": 14,
+    "max_nesting_depth": 2,
+    "module_docstring_coverage": 1.0,
+    "package_modules": 5,
+    "public_function_names": [
+      "main",
+      "normalize_ws",
+      "summarize",
+      "tokenize",
+      "word_frequency"
+    ],
+    "public_functions": 5,
+    "public_functions_without_tests": [],
+    "public_functions_without_tests_count": 0,
+    "test_cases": 54,
+    "test_functions": 51
+  },
+  "workflow_root": "D:\\project\\swarm-lab-python"
+}
