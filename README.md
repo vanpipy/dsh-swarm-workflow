@@ -15,7 +15,7 @@ rewritten for this host, and no host fact is written into the shipped text.
 | --- | --- | --- |
 | `prompt-overlay.md` | the user | the global execution policy |
 | `swarm-prompt.md` | the user | the delegation briefing: what to delegate, what a brief must carry, where a requirement lives |
-| `skills/swarm-engineering.md` | the user | the role methods, the assignment contract, requirement matching and handover |
+| `skills/swarm-engineering/swarm-engineering.md` | the user | the role methods, the assignment contract, requirement matching and handover |
 | `runtime-note.md` | the plugin | the host note: the host identity, the Jcode-to-DeepSeek-Harness surface map, the requirement carrier, the verification path, and the live capabilities of the session |
 | `skills/swarm-engineering/shared.md` | the plugin | the shared craft: the three checks that hold in every language, the pieces that shape the code, the other stacks |
 | `skills/swarm-engineering/developer.md` | the plugin | the developer's craft: how a Developer applies the core to an edit |
@@ -36,7 +36,7 @@ the session actually loaded — a profile install, a junction and a source
 checkout each get their own.
 
 Each craft file is also registered with the host as a skill, the way
-`skills/swarm-engineering.md` is, so a lane can load one by name instead of
+`skills/swarm-engineering/swarm-engineering.md` is, so a lane can load one by name instead of
 opening a file: `swarm-craft-shared`, `swarm-craft-developer`,
 `swarm-craft-tester`, `swarm-craft-reviewer` and `swarm-craft-python`. The name
 and the description live in the file's own frontmatter, so the catalog and the
@@ -97,13 +97,13 @@ per role.
 
 ```
 skills/
-  swarm-engineering.md    the role methods (the user's file)
   swarm-engineering/
-    shared.md            the core every lane uses
-    developer.md         the developer's craft
-    tester.md            the tester's craft
-    reviewer.md          the reviewer's craft
-    languages/python.md  the language pieces
+    swarm-engineering.md  the role methods (the user's file)
+    shared.md             the core every lane uses
+    developer.md          the developer's craft
+    tester.md             the tester's craft
+    reviewer.md           the reviewer's craft
+    languages/python.md   the language pieces
 ```
 
 ### `shared.md`
@@ -273,7 +273,7 @@ index.js                      the plugin: prompt section, skill, tools, /swarm c
 prompt-overlay.md             the global execution policy (the user's text, verbatim)
 swarm-prompt.md               the delegation briefing (the user's text, verbatim)
 runtime-note.md               the host note: the host facts this plugin wrote
-skills/swarm-engineering.md          the role methods (the user's text, verbatim)
+skills/swarm-engineering/swarm-engineering.md  the role methods (the user's text, verbatim)
 skills/swarm-engineering/shared.md   the shared craft every lane uses (the plugin's prose)
 skills/swarm-engineering/developer.md  the developer's craft (the plugin's prose)
 skills/swarm-engineering/tester.md   the tester's craft (the plugin's prose)

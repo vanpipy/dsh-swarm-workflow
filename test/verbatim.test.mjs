@@ -2,7 +2,7 @@
 //
 // The bundle ships three files that belong to the user: prompt-overlay.md
 // (the global execution policy), swarm-prompt.md (the delegation briefing) and
-// skills/swarm-engineering.md (the role methods). They are shipped byte for
+// skills/swarm-engineering/swarm-engineering.md (the role methods). They are shipped byte for
 // byte, and every host-specific fact lives in runtime-note.md, the one file
 // the plugin wrote.
 //
@@ -34,7 +34,7 @@ const read = (relative) => readFileSync(join(root, relative), 'utf8')
 const NOTE = 'runtime-note.md'
 const OVERLAY = 'prompt-overlay.md'
 const BRIEF = 'swarm-prompt.md'
-const SKILL = 'skills/swarm-engineering.md'
+const SKILL = 'skills/swarm-engineering/swarm-engineering.md'
 /** The files the plugin composes a prompt from. */
 const SHIPPED = [NOTE, OVERLAY, BRIEF, SKILL]
 /** The files the user owns; the plugin only reads them. */

@@ -265,7 +265,7 @@ async function scenarios(makeHost, label) {
 // --- V3: extractSection takes one heading section, verbatim ------------------
 {
   const overlay = readBundle('prompt-overlay.md')
-  const skill = readBundle('skills/swarm-engineering.md')
+  const skill = readBundle('skills/swarm-engineering/swarm-engineering.md')
 
   checkResult('V3 a section starts with its own heading', () =>
     bundle.extractSection(skill, '13. Requirement Handover').startsWith('## 13. Requirement Handover'), true)
@@ -298,7 +298,7 @@ async function scenarios(makeHost, label) {
 // --- V4: extractUntil takes everything before the heading --------------------
 {
   const overlay = readBundle('prompt-overlay.md')
-  const skill = readBundle('skills/swarm-engineering.md')
+  const skill = readBundle('skills/swarm-engineering/swarm-engineering.md')
 
   checkResult('V4 everything before the heading is kept', () =>
     bundle.extractUntil(overlay, '12. Swarm Orchestration').includes('## 11. Policy and Tool Boundaries'), true)

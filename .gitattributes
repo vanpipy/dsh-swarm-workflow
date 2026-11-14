@@ -4,9 +4,9 @@
 # checkout: a fresh clone of this bundle on a Windows host turns them into CRLF
 # and the bundle no longer carries the user's text verbatim. Marking them
 # -text tells git to store the bytes as they are and restore them as they are.
-prompt-overlay.md           -text
-swarm-prompt.md             -text
-skills/swarm-engineering.md -text
+prompt-overlay.md                       -text
+swarm-prompt.md                         -text
+skills/swarm-engineering/swarm-engineering.md -text
 
 # The plugin's own markdown is kept the same way.
 #

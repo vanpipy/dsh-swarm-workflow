@@ -34,7 +34,7 @@ const read = (relative) => readFileSync(fileURLToPath(new URL(`../${relative}`, 
 const note = read('runtime-note.md')
 const overlay = read('prompt-overlay.md')
 const brief = read('swarm-prompt.md')
-const skill = read('skills/swarm-engineering.md')
+const skill = read('skills/swarm-engineering/swarm-engineering.md')
 
 /**
  * Every surface this host offers, so no gated bullet is dropped.

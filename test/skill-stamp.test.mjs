@@ -2,7 +2,7 @@
 //
 // The skill the bundle registers is not the skill file: it is the runtime
 // note's `skill` blocks plus the skill body, so the re-registration stamp has
-// to cover BOTH `skills/swarm-engineering.md` AND `runtime-note.md`. A change
+// to cover BOTH `skills/swarm-engineering/swarm-engineering.md` AND `runtime-note.md`. A change
 // to runtime-note.md alone must re-register the skill, and a change to the
 // skill file alone must re-register it too.
 //
@@ -96,8 +96,8 @@ try {
   copyFileSync(join(root, 'runtime-note.md'), join(sandbox, 'runtime-note.md'))
   copyFileSync(join(root, 'prompt-overlay.md'), join(sandbox, 'prompt-overlay.md'))
   copyFileSync(join(root, 'swarm-prompt.md'), join(sandbox, 'swarm-prompt.md'))
-  mkdirSync(join(sandbox, 'skills'))
-  copyFileSync(join(root, 'skills', 'swarm-engineering.md'), join(sandbox, 'skills', 'swarm-engineering.md'))
+  mkdirSync(join(sandbox, 'skills', 'swarm-engineering'), { recursive: true })
+  copyFileSync(join(root, 'skills', 'swarm-engineering', 'swarm-engineering.md'), join(sandbox, 'skills', 'swarm-engineering', 'swarm-engineering.md'))
   for (const craft of CRAFT) {
     const target = join(sandbox, 'skills', craft.path)
     mkdirSync(join(target, '..'), { recursive: true })
@@ -141,7 +141,7 @@ try {
   check('the registered skill keeps the name from the file', registrations[0]?.name, 'swarm-engineering')
   check('the registered skill names this host in its catalog line', registrations[0]?.description.startsWith('On this host the runtime is DeepSeek Harness'), true)
   check('the catalog line keeps the user\'s own description byte for byte', registrations[0]?.description.endsWith(
-    /^description:\s*(.*)$/m.exec(readFileSync(join(root, 'skills', 'swarm-engineering.md'), 'utf8'))[1].trim(),
+    /^description:\s*(.*)$/m.exec(readFileSync(join(root, 'skills', 'swarm-engineering', 'swarm-engineering.md'), 'utf8'))[1].trim(),
   ), true)
   check('the registered content carries the note\'s skill block', registrations[0]?.content.includes('## The skill on this host'), true)
   check('the registered content carries the user\'s skill body', registrations[0]?.content.includes('A worker cites the requirement as'), true)
@@ -179,7 +179,7 @@ try {
 
   // --- 3. a change to the skill file alone re-registers the skills ------------
   const SKILL_EDIT = ' (edited by the stamp test)'
-  const skillPath = join(sandbox, 'skills', 'swarm-engineering.md')
+  const skillPath = join(sandbox, 'skills', 'swarm-engineering', 'swarm-engineering.md')
   writeFileSync(skillPath, readFileSync(skillPath, 'utf8').replace('A worker cites the requirement as', `A worker cites the requirement as${SKILL_EDIT}`), 'utf8')
   render()
   check('a change to the skill file alone re-registers the skills', registrations.length, 18)
@@ -223,7 +223,7 @@ try {
 
   // --- 7. the shipped files were never touched --------------------------------
   check('the shipped runtime note does not carry the sandbox edit', readFileSync(join(root, 'runtime-note.md'), 'utf8').includes(NOTE_EDIT), false)
-  check('the shipped skill file does not carry the sandbox edit', readFileSync(join(root, 'skills', 'swarm-engineering.md'), 'utf8').includes(SKILL_EDIT), false)
+  check('the shipped skill file does not carry the sandbox edit', readFileSync(join(root, 'skills', 'swarm-engineering', 'swarm-engineering.md'), 'utf8').includes(SKILL_EDIT), false)
   check('the shipped policy does not carry the sandbox edit', readFileSync(join(root, 'prompt-overlay.md'), 'utf8').includes('stamp test: the overlay changed'), false)
   check('the shipped craft file does not carry the sandbox edit', readFileSync(join(root, 'skills', 'swarm-engineering', 'shared.md'), 'utf8').includes(CRAFT_EDIT), false)
   check('the shipped tester craft file does not carry the sandbox edit', readFileSync(join(root, 'skills', 'swarm-engineering', 'tester.md'), 'utf8').includes(DESCRIPTION_EDIT), false)

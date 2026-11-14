@@ -10,11 +10,11 @@
  *
  * The bundle ships four markdown files: `prompt-overlay.md` (the global
  * execution policy), `swarm-prompt.md` (the delegation briefing),
- * `skills/swarm-engineering.md` (the role methods) and `runtime-note.md` (the
- * host note — every fact about this runtime). The first three are the user's
- * own text, shipped byte for byte; the plugin reads them, composes a view of
- * them for the audience it is assembling a prompt for, and never rewrites
- * them.
+ * `skills/swarm-engineering/swarm-engineering.md` (the role methods) and
+ * `runtime-note.md` (the host note — every fact about this runtime). The first
+ * three are the user's own text, shipped byte for byte; the plugin reads them,
+ * composes a view of them for the audience it is assembling a prompt for, and
+ * never rewrites them.
  *
  * Two properties make the workflow track the host instead of a snapshot:
  * every file is re-read when it changes on disk, and the host facts are
@@ -60,7 +60,7 @@ const SKILL_SOURCE = 'dsh-swarm-workflow'
 const RUNTIME_NOTE = './runtime-note.md'
 const PROMPT_OVERLAY = './prompt-overlay.md'
 const SWARM_BRIEF = './swarm-prompt.md'
-const SKILL_FILE = './skills/swarm-engineering.md'
+const SKILL_FILE = './skills/swarm-engineering/swarm-engineering.md'
 /**
  * The craft files that ship with this bundle, relative to this module.
  *

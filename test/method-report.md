@@ -20,7 +20,7 @@ round:
 | `test/run.mjs` | registers `method.test.mjs`, so the runner ends in `ALL SUITES PASSED (6)`. |
 
 I did not touch `index.js`, `runtime-note.md`, `package.json`, `README.md`,
-`skills/`, `prompt-overlay.md`, `swarm-prompt.md` or `skills/swarm-engineering.md`.
+`skills/`, `prompt-overlay.md`, `swarm-prompt.md` or `skills/swarm-engineering/swarm-engineering.md`.
 Nothing is committed.
 
 ### The contract of record, and the one it replaces
@@ -67,7 +67,7 @@ The contract of record, in the words the suites assert:
 ### The one defect this lane found
 
 The stamp was built from the file cache **before** the craft files were read,
-so a change to `skills/swarm-engineering.md` or to a craft file alone did not
+so a change to `skills/swarm-engineering/swarm-engineering.md` or to a craft file alone did not
 re-register the skills — only a change to `runtime-note.md` did. The evidence
 was my own suite:
 
@@ -404,14 +404,14 @@ list is the whole suite.
 - `prompt-overlay.md: no gating fragment`
 - `swarm-prompt.md: no plugin marker`
 - `swarm-prompt.md: no gating fragment`
-- `skills/swarm-engineering.md: no plugin marker`
-- `skills/swarm-engineering.md: no gating fragment`
+- `skills/swarm-engineering/swarm-engineering.md: no plugin marker`
+- `skills/swarm-engineering/swarm-engineering.md: no gating fragment`
 - `prompt-overlay.md: no host name`
 - `prompt-overlay.md: no host-note file name`
 - `swarm-prompt.md: no host name`
 - `swarm-prompt.md: no host-note file name`
-- `skills/swarm-engineering.md: no host name`
-- `skills/swarm-engineering.md: no host-note file name`
+- `skills/swarm-engineering/swarm-engineering.md: no host name`
+- `skills/swarm-engineering/swarm-engineering.md: no host-note file name`
 - `runtime-note.md: it names the host`
 - `runtime-note.md: it carries scope blocks`
 - `the host note is the only shipped file that carries markers (found: runtime-note.md)`
@@ -419,14 +419,14 @@ list is the whole suite.
 - `prompt-overlay.md: keeps the policy boundaries section`
 - `swarm-prompt.md: keeps the requirement rule`
 - `swarm-prompt.md: keeps the brief contract`
-- `skills/swarm-engineering.md: keeps the requirement handover section`
-- `skills/swarm-engineering.md: keeps the requirement matching section`
-- `skills/swarm-engineering.md: keeps the assignment contract section`
-- `skills/swarm-engineering.md: keeps the handover citation rule`
-- `skills/swarm-engineering.md: keeps the handover carrier rule`
-- `skills/swarm-engineering.md: it starts with a frontmatter block`
-- `skills/swarm-engineering.md: the frontmatter names the skill`
-- `skills/swarm-engineering.md: the frontmatter carries a description`
+- `skills/swarm-engineering/swarm-engineering.md: keeps the requirement handover section`
+- `skills/swarm-engineering/swarm-engineering.md: keeps the requirement matching section`
+- `skills/swarm-engineering/swarm-engineering.md: keeps the assignment contract section`
+- `skills/swarm-engineering/swarm-engineering.md: keeps the handover citation rule`
+- `skills/swarm-engineering/swarm-engineering.md: keeps the handover carrier rule`
+- `skills/swarm-engineering/swarm-engineering.md: it starts with a frontmatter block`
+- `skills/swarm-engineering/swarm-engineering.md: the frontmatter names the skill`
+- `skills/swarm-engineering/swarm-engineering.md: the frontmatter carries a description`
 #### `skill-stamp.test.mjs`
 
 - `the bundle registers the skill when it is applied`
@@ -1114,14 +1114,14 @@ ok    prompt-overlay.md: no plugin marker
 ok    prompt-overlay.md: no gating fragment
 ok    swarm-prompt.md: no plugin marker
 ok    swarm-prompt.md: no gating fragment
-ok    skills/swarm-engineering.md: no plugin marker
-ok    skills/swarm-engineering.md: no gating fragment
+ok    skills/swarm-engineering/swarm-engineering.md: no plugin marker
+ok    skills/swarm-engineering/swarm-engineering.md: no gating fragment
 ok    prompt-overlay.md: no host name
 ok    prompt-overlay.md: no host-note file name
 ok    swarm-prompt.md: no host name
 ok    swarm-prompt.md: no host-note file name
-ok    skills/swarm-engineering.md: no host name
-ok    skills/swarm-engineering.md: no host-note file name
+ok    skills/swarm-engineering/swarm-engineering.md: no host name
+ok    skills/swarm-engineering/swarm-engineering.md: no host-note file name
 ok    runtime-note.md: it names the host
 ok    runtime-note.md: it carries scope blocks
 ok    the host note is the only shipped file that carries markers (found: runtime-note.md)
@@ -1129,14 +1129,14 @@ ok    prompt-overlay.md: keeps the orchestration section
 ok    prompt-overlay.md: keeps the policy boundaries section
 ok    swarm-prompt.md: keeps the requirement rule
 ok    swarm-prompt.md: keeps the brief contract
-ok    skills/swarm-engineering.md: keeps the requirement handover section
-ok    skills/swarm-engineering.md: keeps the requirement matching section
-ok    skills/swarm-engineering.md: keeps the assignment contract section
-ok    skills/swarm-engineering.md: keeps the handover citation rule
-ok    skills/swarm-engineering.md: keeps the handover carrier rule
-ok    skills/swarm-engineering.md: it starts with a frontmatter block
-ok    skills/swarm-engineering.md: the frontmatter names the skill
-ok    skills/swarm-engineering.md: the frontmatter carries a description
+ok    skills/swarm-engineering/swarm-engineering.md: keeps the requirement handover section
+ok    skills/swarm-engineering/swarm-engineering.md: keeps the requirement matching section
+ok    skills/swarm-engineering/swarm-engineering.md: keeps the assignment contract section
+ok    skills/swarm-engineering/swarm-engineering.md: keeps the handover citation rule
+ok    skills/swarm-engineering/swarm-engineering.md: keeps the handover carrier rule
+ok    skills/swarm-engineering/swarm-engineering.md: it starts with a frontmatter block
+ok    skills/swarm-engineering/swarm-engineering.md: the frontmatter names the skill
+ok    skills/swarm-engineering/swarm-engineering.md: the frontmatter carries a description
 ALL CHECKS PASSED
 
 === skill-stamp.test.mjs ===

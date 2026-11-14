@@ -8,11 +8,11 @@ assembling a prompt for, and it never rewrites the shipped text.
 <!-- swarm:note coordinator worker skill -->
 # Runtime note — this host is DeepSeek Harness, not Jcode
 
-This file is the only prose in this bundle that the plugin wrote. The global
-execution policy (`prompt-overlay.md`), the delegation briefing
-(`swarm-prompt.md`) and the role methods (`skills/swarm-engineering.md`) are
-the user's own text, shipped byte for byte; the plugin only reads them and
-composes a view of them.
+This file is the host note: the plugin's own prose about this runtime. The
+global execution policy (`prompt-overlay.md`), the delegation briefing
+(`swarm-prompt.md`) and the role methods
+(`skills/swarm-engineering/swarm-engineering.md`) are the user's own text,
+shipped byte for byte; the plugin only reads them and composes a view of them.
 
 Everything that depends on the runtime lives here. Where the shipped text
 names a Jcode surface, the surface that replaces it on this host is named
