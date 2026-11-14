@@ -206,6 +206,20 @@ so the Coordinator reviews its own diff and states what it verified, or spends
 a Reviewer lane — one verification run at acceptance, and a second one is the
 user's to start.
 
+## The validation record
+
+This bundle has been run against two test beds: one that asked whether a lane
+which loads the craft guidance produces a different artefact from a lane that
+does not, and one that asked whether the workflow holds when the same contract
+is implemented across five languages. Their requirement sets, decisions, lane
+reports and acceptance reports are in [`docs/validation/`](docs/validation/README.md).
+
+The acceptance reports there carry their own boundary sections: what was
+demonstrated, and what this host could not verify. Two findings from them are
+worth reading before quoting any number — the craft comparison is between two
+briefs and not two environments, and one material cross-language divergence
+(Go accepts an unknown record key) is left open on purpose.
+
 ## Install
 
 **One route: the GitHub address.** In the desktop app open **Plugins → Add
@@ -295,6 +309,7 @@ skills/swarm-engineering/languages/  the language pieces, one file per language 
 cordis.patch.yml              the profile row (id: swarm-workflow)
 client.js, locale/, icon.svg  the Web-GUI side
 test/                         the suite that travels with the bundle
+docs/validation/              the validation record: the two test beds' evidence (not shipped in the package)
 ```
 
 ## Tests
