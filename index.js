@@ -74,6 +74,10 @@ const CRAFT_FILES = {
   tester: './skills/swarm-engineering/tester.md',
   reviewer: './skills/swarm-engineering/reviewer.md',
   python: './skills/swarm-engineering/languages/python.md',
+  java: './skills/swarm-engineering/languages/java.md',
+  go: './skills/swarm-engineering/languages/go.md',
+  typescript: './skills/swarm-engineering/languages/typescript.md',
+  rust: './skills/swarm-engineering/languages/rust.md',
 }
 
 /**
@@ -1534,7 +1538,7 @@ export function apply(ctx) {
           const block = capabilityBlock(names, { referenced, command: true })
           return {
             kind: 'success',
-            text: `${block}\n\nThe Coordinator drives the swarm: open a session goal, give every parallel lane its own files, and delegate with the surfaces listed above. The \`swarm-engineering\` skill carries the role methods — Developer, Tester, Reviewer, and the runtime note carries this host's facts. Every brief names the craft guidance for its lane; the craft files that ship with this bundle are ${bundlePointer(CRAFT_FILES.shared)}, ${bundlePointer(CRAFT_FILES.developer)}, ${bundlePointer(CRAFT_FILES.tester)}, ${bundlePointer(CRAFT_FILES.reviewer)} and ${bundlePointer(CRAFT_FILES.python)}.`,
+            text: `${block}\n\nThe Coordinator drives the swarm: open a session goal, give every parallel lane its own files, and delegate with the surfaces listed above. The \`swarm-engineering\` skill carries the role methods — Developer, Tester, Reviewer, and the runtime note carries this host's facts. Every brief names the craft guidance for its lane; the craft files that ship with this bundle are ${Object.values(CRAFT_FILES).map((file) => bundlePointer(file)).join(', ')}.`,
           }
         },
       })

@@ -143,6 +143,10 @@ the skill itself, one file per role, and this is where they are:
 - the tester's craft: `{{swarm:tester}}`
 - the reviewer's craft: `{{swarm:reviewer}}`
 - the Python pieces: `{{swarm:python}}`
+- the Java pieces: `{{swarm:java}}`
+- the Go pieces: `{{swarm:go}}`
+- the TypeScript pieces: `{{swarm:typescript}}`
+- the Rust pieces: `{{swarm:rust}}`
 
 Each of them is registered with the host the way `swarm-engineering.md` is, so
 a lane loads one by name instead of opening a file:
@@ -152,6 +156,10 @@ a lane loads one by name instead of opening a file:
 - `swarm-craft-tester` — the tester's craft
 - `swarm-craft-reviewer` — the reviewer's craft
 - `swarm-craft-python` — the Python pieces
+- `swarm-craft-java` — the Java pieces
+- `swarm-craft-go` — the Go pieces
+- `swarm-craft-typescript` — the TypeScript pieces
+- `swarm-craft-rust` — the Rust pieces
 
 It is the craft guidance every lane works by — the checks that hold in every
 language, the pieces that shape the code, what a reviewer looks for, and the
@@ -161,8 +169,9 @@ policy still binds, and the craft tells a lane how to work inside it.
 - A brief names the file and the piece that applies to the lane's role: the
   developer's craft for an implementation lane, the tester's craft for a
   verification lane, the reviewer's craft for a review lane, and the language
-  file for the language in play. A brief that gives a lane a role and no piece
-  leaves the lane guessing what good looks like.
+  file for the language in play — Python, Java, Go, TypeScript or Rust. A brief
+  that gives a lane a role and no piece leaves the lane guessing what good
+  looks like.
 - A lane reads the file before it changes anything, and applies it while it
   works, not afterwards.
 - The shared file holds the core: the three checks, the pieces that hold in

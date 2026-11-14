@@ -22,6 +22,10 @@ rewritten for this host, and no host fact is written into the shipped text.
 | `skills/swarm-engineering/tester.md` | the plugin | the tester's craft: how a Tester applies the core to a check |
 | `skills/swarm-engineering/reviewer.md` | the plugin | the reviewer's craft: how a Reviewer applies the core to a change |
 | `skills/swarm-engineering/languages/python.md` | the plugin | the Python pieces: the idioms, the version floors, the traps |
+| `skills/swarm-engineering/languages/java.md` | the plugin | the Java pieces: the idioms, the version floors, the traps |
+| `skills/swarm-engineering/languages/go.md` | the plugin | the Go pieces: the idioms, the version floors, the traps |
+| `skills/swarm-engineering/languages/typescript.md` | the plugin | the TypeScript pieces: the idioms, the version floors, the traps |
+| `skills/swarm-engineering/languages/rust.md` | the plugin | the Rust pieces: the idioms, the version floors, the traps |
 
 `runtime-note.md` is written in scope blocks, marked
 `<!-- swarm:note coordinator worker skill -->`. The plugin prepends the blocks
@@ -38,7 +42,9 @@ checkout each get their own.
 Each craft file is also registered with the host as a skill, the way
 `skills/swarm-engineering/swarm-engineering.md` is, so a lane can load one by name instead of
 opening a file: `swarm-craft-shared`, `swarm-craft-developer`,
-`swarm-craft-tester`, `swarm-craft-reviewer` and `swarm-craft-python`. The name
+`swarm-craft-tester`, `swarm-craft-reviewer`, `swarm-craft-python`,
+`swarm-craft-java`, `swarm-craft-go`, `swarm-craft-typescript` and
+`swarm-craft-rust`. The name
 and the description live in the file's own frontmatter, so the catalog and the
 file never drift apart.
 
@@ -103,7 +109,12 @@ skills/
     developer.md          the developer's craft
     tester.md             the tester's craft
     reviewer.md           the reviewer's craft
-    languages/python.md   the language pieces
+    languages/
+      python.md     the Python pieces
+      java.md        the Java pieces
+      go.md          the Go pieces
+      typescript.md  the TypeScript pieces
+      rust.md        the Rust pieces
 ```
 
 ### `shared.md`
@@ -124,14 +135,16 @@ skills/
 | `tester.md` | choose the oracle, make the check discriminate, cover the boundary rather than the middle, prove the check can fail, report honestly |
 | `reviewer.md` | read the change as a claim, re-derive the evidence yourself, the review smells, hunt the check that cannot fail, name what you did not check, the severity vocabulary |
 
-### `languages/python.md`
+### The language files
 
-Nineteen sections, one per topic: the surface and the version floor, typing,
-data modelling, collections, iteration and laziness, errors, resources, files
-and paths, the shell and the outside world, time and clocks, concurrency,
-testing, the command line, performance, style and docstrings, dependencies and
-environments, logging and diagnostics, security, and the common traps. A
-language that deserves its own file gets one beside it.
+One file per language: `python.md`, `java.md`, `go.md`, `typescript.md` and
+`rust.md`. Each carries the same nineteen sections, one per topic — the surface
+and the version floor, typing, data modelling, collections, iteration and
+laziness, errors, resources, files and paths, the shell and the outside world,
+time and clocks, concurrency, testing, the command line, performance, style and
+documentation, dependencies and environments, logging and diagnostics, security,
+and the common traps — in that language's own idioms. A language that deserves
+its own file gets one beside it.
 
 The craft reaches the lanes by path and by name. The runtime note names the
 files where the Coordinator writes a brief and where a lane reads them, and
@@ -278,7 +291,7 @@ skills/swarm-engineering/shared.md   the shared craft every lane uses (the plugi
 skills/swarm-engineering/developer.md  the developer's craft (the plugin's prose)
 skills/swarm-engineering/tester.md   the tester's craft (the plugin's prose)
 skills/swarm-engineering/reviewer.md the reviewer's craft (the plugin's prose)
-skills/swarm-engineering/languages/  the language pieces, one file per language
+skills/swarm-engineering/languages/  the language pieces, one file per language (python, java, go, typescript, rust)
 cordis.patch.yml              the profile row (id: swarm-workflow)
 client.js, locale/, icon.svg  the Web-GUI side
 test/                         the suite that travels with the bundle

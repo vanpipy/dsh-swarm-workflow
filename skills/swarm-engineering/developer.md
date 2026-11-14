@@ -128,8 +128,8 @@ says what the Developer does with them.
 
 ## 6. The language pieces
 
-* The language file for the language in play sits under `languages/`:
-  `languages/python.md` today.
+* The language file for the language in play sits under `languages/`: Python,
+  Java, Go, TypeScript and Rust today.
 * Read the piece that matches what you are changing, before you change it.
 * A brief names the language file and the piece: "read §6 of the Python craft
   before you touch the error handling".

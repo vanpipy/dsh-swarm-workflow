@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "private": true,
   "type": "module",
-  "description": "Ships the swarm execution policy verbatim: injects the global execution policy into the Coordinator, a scoped view of it plus the role methods into every delegated lane, and registers the swarm-engineering skill. Every host-specific fact lives in runtime-note.md, and the craft guidance for the lanes lives in skills/swarm-engineering/.",
+  "description": "Ships the swarm execution policy verbatim: injects the global execution policy into the Coordinator, a scoped view of it plus the role methods into every delegated lane, and registers the swarm-engineering skill. Every host-specific fact lives in runtime-note.md, and the craft guidance for the lanes lives in skills/swarm-engineering/, with the language pieces for Python, Java, Go, TypeScript and Rust.",
   "exports": {
     ".": "./index.js",
     "./client": "./client.js",

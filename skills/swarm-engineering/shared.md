@@ -23,7 +23,10 @@ to work with.
 | `languages/<language>.md` | the language pieces, one file per language |
 
 The language-specific pieces live under `languages/`, so that a language can
-grow without this file growing with it. A brief names the file and the piece:
+grow without this file growing with it. The language files that ship with this
+bundle are `languages/python.md`, `languages/java.md`, `languages/go.md`,
+`languages/typescript.md` and `languages/rust.md`; each one carries the same
+nineteen sections in that language's own idioms. A brief names the file and the piece:
 "read §3 of the tester's craft before you write the check". A brief that names
 a role and no piece leaves the lane guessing what good looks like.
 
@@ -87,7 +90,8 @@ section rather than in a footnote.
 ## 3. The pieces that hold in every language
 
 Each piece is a set of rules with a named trap. The examples are Python because
-that is the language this bundle's host uses most; the rules are not Python's.
+that is the language the first language file covered; the rules are not
+Python's, and the language file for the language in play has the rest.
 
 ### 3.1 Boundaries and modules
 
