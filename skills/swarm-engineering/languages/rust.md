@@ -42,9 +42,9 @@ here is checkable: a rule you cannot check is advice, not guidance.
   flags that must not both be true become an `enum`.
 * Derive what you mean: `#[derive(Clone, Debug, PartialEq, Eq, Hash)]` —
   without `Eq` a `HashMap` key breaks.
-* Parse at the boundary: `UserId::parse` returns `Result<UserId,
-  ParseError>`.
+* Parse at the boundary: `UserId::parse` returns `Result<UserId, ParseError>`.
 * `serde` with `derive` for wire types; `deny_unknown_fields` on input.
+* Reach for a trait when the behaviour is shared, not for one caller.
 
 ## 4. Collections and the standard library
 
@@ -73,12 +73,10 @@ here is checkable: a rule you cannot check is advice, not guidance.
   last value, Java throws — Rust returns `Result`.
 * `?` propagates and converts: the error type must implement `From` for the
   inner error, or `?` will not compile.
-* `unwrap`/`expect` only where the invariant is written down:
-  `expect("invariant: the file was created above")` — never on a file, an
-  argument, the network or the environment.
-* A custom error implements `std::error::Error` and names its cause; `thiserror`
-  derives it.
-* `unwrap_or` is eager, `unwrap_or_else` is lazy.
+* `unwrap`/`expect` only where the invariant is written down — never on a
+  file, an argument, the network or the environment.
+* A custom error implements `std::error::Error` and names its cause;
+  `thiserror` derives it.
 
 ## 7. Resources
 
@@ -99,8 +97,7 @@ here is checkable: a rule you cannot check is advice, not guidance.
   exist. A path is not normalised: `a/./b` and `a/b` differ.
 * Write atomically when a reader may see a partial file: write a temporary
   file in the same directory, then `fs::rename` over it.
-* Rust does not translate newlines: `writeln!` writes `\n` everywhere, and
-  `lines()` strips a trailing `\r`.
+* Rust does not translate newlines: `writeln!` writes `\n` everywhere.
 
 ## 9. The shell and the outside world
 
@@ -120,39 +117,32 @@ here is checkable: a rule you cannot check is advice, not guidance.
 * `Instant::now()` and `SystemTime::now()` are the only places that read
   the clock. Take "now" as an argument to make the code testable.
 * `Instant + Duration` panics on overflow; `checked_add` returns `None`.
-* `Duration::from_secs`, `from_millis`, `as_millis` — integers, no float
-  rounding. `as_secs_f64` loses precision on a long duration.
-* `chrono` or `time` for calendars and time zones; the standard library
-  has no calendar. `std::thread::sleep` blocks the whole executor.
+* `Duration::from_secs` and `as_millis` are integers — no float rounding.
+* `chrono` or `time` for calendars; the standard library has no calendar.
 
 ## 11. Concurrency
 
-* `Send` and `Sync` decide what may cross a thread boundary; `Rc` is neither.
+* `Send` moves a value to another thread, `Sync` shares `&T`; `Rc` is neither.
 * `Arc<Mutex<T>>` across threads, `Rc<RefCell<T>>` in one thread: a
   `RefCell` panics at runtime on a double borrow, `&mut` would not.
-* `Arc<T>` is `Send + Sync` when `T` is; `Mutex::lock` returns a `Result`
-  because of poisoning.
-* A `tokio::spawn`ed future must be `Send + 'static` — clone or `Arc` its
-  data.
+* `Mutex::lock` returns a `Result` because of poisoning.
+* A `tokio::spawn`ed future must be `Send + 'static`; clone the data it needs.
 * Never hold a `std::sync::MutexGuard` across an `.await`: the task that
   needs the lock can never run, and the program deadlocks.
 * `cargo clippy -- -W clippy::await_holding_lock` reports that guard.
 * A blocking call inside an async task stalls the whole executor: use
   `tokio::fs`/`tokio::net` or `spawn_blocking`.
-* A channel's `recv` returns `Err` when the sender is dropped.
 
 ## 12. Testing
 
 * `cargo test` runs the unit tests, the integration tests and the doctests.
-* `#[cfg(test)] mod tests` inside the source file, integration tests in
-  `tests/`.
+* Unit tests live in `#[cfg(test)] mod tests`; integration tests in `tests/`.
 * A shared helper goes in `tests/common/mod.rs`, not `tests/common.rs` — a
   `.rs` file directly in `tests/` is compiled as its own test binary.
-* `#[should_panic(expected = "...")]` pins the message when the panic is the
-  contract.
-* Compare floats with an explicit epsilon; `a == b` on `f64` is a flaky
-  assert.
+* `#[should_panic(expected = "...")]` pins the panic message.
+* Compare floats with an explicit epsilon; `a == b` on `f64` is a flaky assert.
 * `tempfile::tempdir()` for a temporary directory, never the repository.
+* `cargo test --release` when timing matters; the debug profile is slow.
 
 ## 13. The command line
 
@@ -215,10 +205,8 @@ here is checkable: a rule you cannot check is advice, not guidance.
 * `cargo +nightly miri test` checks `unsafe` code for undefined behaviour.
 * Integer overflow wraps in release: use `checked_*`, or set
   `overflow-checks = true` in the release profile.
-* Secrets come from the environment or a secret store, never from a default
-  value. `getrandom` or `OsRng` for a token — never the general PRNG.
-* Normalise a path from outside and check it stays under the root:
-  `canonicalize` it, then `starts_with`.
+* Secrets come from the environment, never a default value; `OsRng` for a token.
+* Normalise an outside path, then check `canonicalize` and `starts_with`.
 
 ## 19. The common traps
 
