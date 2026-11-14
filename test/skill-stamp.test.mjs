@@ -35,6 +35,10 @@ const CRAFT = [
   { path: 'swarm-engineering/tester.md', name: 'swarm-craft-tester', heading: "# The tester's craft" },
   { path: 'swarm-engineering/reviewer.md', name: 'swarm-craft-reviewer', heading: "# The reviewer's craft" },
   { path: 'swarm-engineering/languages/python.md', name: 'swarm-craft-python', heading: '# The Python pieces' },
+  { path: 'swarm-engineering/languages/java.md', name: 'swarm-craft-java', heading: '# The Java pieces' },
+  { path: 'swarm-engineering/languages/go.md', name: 'swarm-craft-go', heading: '# The Go pieces' },
+  { path: 'swarm-engineering/languages/typescript.md', name: 'swarm-craft-typescript', heading: '# The TypeScript pieces' },
+  { path: 'swarm-engineering/languages/rust.md', name: 'swarm-craft-rust', heading: '# The Rust pieces' },
 ]
 
 let failures = 0
@@ -134,7 +138,7 @@ try {
 
   // --- 1. the first registration ---------------------------------------------
   // The skill of the bundle plus the craft files, one registration each.
-  check('the bundle registers the skill when it is applied', registrations.length, 6)
+  check('the bundle registers the skill when it is applied', registrations.length, 10)
   check('the registered skills carry their names in the order they are registered',
     registrations.map((registration) => registration.name),
     ['swarm-engineering', ...CRAFT.map((craft) => craft.name)])
@@ -171,10 +175,10 @@ try {
   const notePath = join(sandbox, 'runtime-note.md')
   writeFileSync(notePath, readFileSync(notePath, 'utf8').replace('## The skill on this host', `## The skill on this host${NOTE_EDIT}`), 'utf8')
   render()
-  check('a change to runtime-note.md alone re-registers the skills', registrations.length, 12)
-  check('the re-registered skill carries the changed note', registrations[6]?.content.includes(`## The skill on this host${NOTE_EDIT}`), true)
-  check('the re-registered skill keeps the user\'s body', registrations[6]?.content.includes('A worker cites the requirement as'), true)
-  check('the previous registrations are disposed when the skills are re-registered', disposed.length, 6)
+  check('a change to runtime-note.md alone re-registers the skills', registrations.length, 20)
+  check('the re-registered skill carries the changed note', registrations[10]?.content.includes(`## The skill on this host${NOTE_EDIT}`), true)
+  check('the re-registered skill keeps the user\'s body', registrations[10]?.content.includes('A worker cites the requirement as'), true)
+  check('the previous registrations are disposed when the skills are re-registered', disposed.length, 10)
   check('the disposed registrations are the first ones', disposed[0] === registrations[0], true)
 
   // --- 3. a change to the skill file alone re-registers the skills ------------
@@ -182,10 +186,10 @@ try {
   const skillPath = join(sandbox, 'skills', 'swarm-engineering', 'swarm-engineering.md')
   writeFileSync(skillPath, readFileSync(skillPath, 'utf8').replace('A worker cites the requirement as', `A worker cites the requirement as${SKILL_EDIT}`), 'utf8')
   render()
-  check('a change to the skill file alone re-registers the skills', registrations.length, 18)
-  check('the re-registered skill carries the changed body', registrations[12]?.content.includes(`A worker cites the requirement as${SKILL_EDIT}`), true)
-  check('the re-registered skill keeps the changed note', registrations[12]?.content.includes(`## The skill on this host${NOTE_EDIT}`), true)
-  check('the second round of registrations is disposed as well', disposed.length, 12)
+  check('a change to the skill file alone re-registers the skills', registrations.length, 30)
+  check('the re-registered skill carries the changed body', registrations[20]?.content.includes(`A worker cites the requirement as${SKILL_EDIT}`), true)
+  check('the re-registered skill keeps the changed note', registrations[20]?.content.includes(`## The skill on this host${NOTE_EDIT}`), true)
+  check('the second round of registrations is disposed as well', disposed.length, 20)
 
   // --- 4. a change to a craft file's body re-registers the skills -------------
   // The edit goes to the heading, not to the frontmatter: the frontmatter
@@ -195,10 +199,10 @@ try {
   const craftPath = join(sandbox, 'skills', 'swarm-engineering', 'shared.md')
   writeFileSync(craftPath, readFileSync(craftPath, 'utf8').replace('# The shared craft', `# The shared craft${CRAFT_EDIT}`), 'utf8')
   render()
-  check('a change to a craft file alone re-registers the skills', registrations.length, 24)
-  check('the re-registered craft file carries the changed body', registrations[19]?.content.includes(`# The shared craft${CRAFT_EDIT}`), true)
-  check('the re-registered craft file keeps its name', registrations[19]?.name, 'swarm-craft-shared')
-  check('the third round of registrations is disposed as well', disposed.length, 18)
+  check('a change to a craft file alone re-registers the skills', registrations.length, 40)
+  check('the re-registered craft file carries the changed body', registrations[31]?.content.includes(`# The shared craft${CRAFT_EDIT}`), true)
+  check('the re-registered craft file keeps its name', registrations[31]?.name, 'swarm-craft-shared')
+  check('the third round of registrations is disposed as well', disposed.length, 30)
 
   // --- 5. a change to a craft file's frontmatter changes its description ------
   // The frontmatter is the file's catalog line: changing it changes the
@@ -207,19 +211,19 @@ try {
   const testerPath = join(sandbox, 'skills', 'swarm-engineering', 'tester.md')
   writeFileSync(testerPath, readFileSync(testerPath, 'utf8').replace("description: The tester's craft", `description: The tester's craft${DESCRIPTION_EDIT}`), 'utf8')
   render()
-  check('a change to a craft file\'s frontmatter re-registers the skills', registrations.length, 30)
-  check('the re-registered description carries the edited description', registrations[27]?.description.includes(`The tester's craft${DESCRIPTION_EDIT}`), true)
-  check('the re-registered description still names this host', registrations[27]?.description.startsWith('On this host the runtime is DeepSeek Harness'), true)
-  check('the re-registered content still carries the unedited body', registrations[27]?.content.includes("# The tester's craft"), true)
-  check('the re-registered content starts with the note\'s first block', registrations[27]?.content.startsWith('# '), true)
-  check('the edited frontmatter does not leak into the content', registrations[27]?.content.includes(`The tester's craft${DESCRIPTION_EDIT}`), false)
-  check('the fourth round of registrations is disposed as well', disposed.length, 24)
+  check('a change to a craft file\'s frontmatter re-registers the skills', registrations.length, 50)
+  check('the re-registered description carries the edited description', registrations[43]?.description.includes(`The tester's craft${DESCRIPTION_EDIT}`), true)
+  check('the re-registered description still names this host', registrations[43]?.description.startsWith('On this host the runtime is DeepSeek Harness'), true)
+  check('the re-registered content still carries the unedited body', registrations[43]?.content.includes("# The tester's craft"), true)
+  check('the re-registered content starts with the note\'s first block', registrations[43]?.content.startsWith('# '), true)
+  check('the edited frontmatter does not leak into the content', registrations[43]?.content.includes(`The tester's craft${DESCRIPTION_EDIT}`), false)
+  check('the fourth round of registrations is disposed as well', disposed.length, 40)
 
   // --- 6. a change to a file the skills do not depend on changes nothing ------
   const overlayPath = join(sandbox, 'prompt-overlay.md')
   writeFileSync(overlayPath, `${readFileSync(overlayPath, 'utf8')}\n<!-- stamp test: the overlay changed -->\n`, 'utf8')
   render()
-  check('a change to the policy alone does not re-register the skills', registrations.length, 30)
+  check('a change to the policy alone does not re-register the skills', registrations.length, 50)
 
   // --- 7. the shipped files were never touched --------------------------------
   check('the shipped runtime note does not carry the sandbox edit', readFileSync(join(root, 'runtime-note.md'), 'utf8').includes(NOTE_EDIT), false)

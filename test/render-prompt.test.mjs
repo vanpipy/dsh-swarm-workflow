@@ -130,7 +130,8 @@ const swarmOutput = swarmCommand === undefined ? '' : String(swarmCommand.handle
 // --- the craft wiring --------------------------------------------------------
 // The craft guidance is files the bundle ships, not text it composes: the note
 // names them through the tokens `{{swarm:shared}}`, `{{swarm:developer}}`,
-// `{{swarm:tester}}`, `{{swarm:reviewer}}` and `{{swarm:python}}`, and the
+// `{{swarm:tester}}`, `{{swarm:reviewer}}`, `{{swarm:python}}`,
+// `{{swarm:java}}`, `{{swarm:go}}`, `{{swarm:typescript}}` and `{{swarm:rust}}`, and the
 // plugin resolves each token to the absolute path of the file that ships with
 // the loaded bundle. A lane then reads the file at that path, so the path has
 // to be the real one, and no token may ever reach a prompt.
@@ -140,6 +141,10 @@ const CRAFT = [
   { key: 'tester', path: 'swarm-engineering/tester.md', name: 'tester.md', token: '{{swarm:tester}}' },
   { key: 'reviewer', path: 'swarm-engineering/reviewer.md', name: 'reviewer.md', token: '{{swarm:reviewer}}' },
   { key: 'python', path: 'swarm-engineering/languages/python.md', name: 'python.md', token: '{{swarm:python}}' },
+  { key: 'java', path: 'swarm-engineering/languages/java.md', name: 'java.md', token: '{{swarm:java}}' },
+  { key: 'go', path: 'swarm-engineering/languages/go.md', name: 'go.md', token: '{{swarm:go}}' },
+  { key: 'typescript', path: 'swarm-engineering/languages/typescript.md', name: 'typescript.md', token: '{{swarm:typescript}}' },
+  { key: 'rust', path: 'swarm-engineering/languages/rust.md', name: 'rust.md', token: '{{swarm:rust}}' },
 ]
 /**
  * The path of a craft file, resolved the way the plugin resolves it.
