@@ -237,6 +237,9 @@ task on the shared board; it is the only thing you act on.
 This Skill is the user's own text, shipped verbatim; nothing in it was
 rewritten for this host.
 
+<!-- swarm:note worker skill -->
+## The names in the skill that are runtime names
+
 Two names in it are runtime names rather than method names. "Jcode" means this
 host wherever it appears. A "todo" that carries a requirement in its `details`
 field means a task on the shared board, whose `description` carries the
