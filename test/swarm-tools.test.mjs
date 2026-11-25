@@ -468,6 +468,7 @@ function undefinedPaths(value, path = 'result') {
 // --- the report -------------------------------------------------------------
 
 const failed = checks.filter((entry) => !entry.ok)
+console.log(`SUITE CHECKS: ${checks.length}`)
 if (failed.length > 0) {
   console.log(`FAILED ${failed.length} of ${checks.length} checks`)
   for (const entry of failed) console.log(`  FAIL ${entry.name}${entry.detail ? ` — ${entry.detail}` : ''}`)

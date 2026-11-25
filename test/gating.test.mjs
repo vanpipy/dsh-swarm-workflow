@@ -4,15 +4,24 @@
 // (see lib/host-cordis.mjs) and always against the local model in
 // lib/cordis-model.mjs, so the bundle's registration logic is tested wherever
 // the suite runs. Read-only: nothing is written outside this directory.
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+//
+// Scenarios G, H and I cover the cold boot: the tool registry arrives after
+// the plugin was applied, or is provided by a sibling bundle that is still
+// loading, or never arrives at all. The registry is read strictly, so a
+// bundle that sampled it once would drop every primitive for the session.
+import { cpSync, mkdtempSync, readFileSync, rmSync, utimesSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import * as bundle from '../index.js'
 import { ModelContext } from './lib/cordis-model.mjs'
-import { loadHostCordis } from './lib/host-cordis.mjs'
+import { asarCandidates, loadHostCordis } from './lib/host-cordis.mjs'
 
 const tick = () => new Promise((resolve) => setTimeout(resolve, 80))
 let failures = 0
+let checks = 0
 function check(label, actual, expected) {
+  checks += 1
   const ok = JSON.stringify(actual) === JSON.stringify(expected)
   if (!ok) failures += 1
   console.log(`${ok ? 'PASS' : 'FAIL'} ${label} -> ${JSON.stringify(actual)}${ok ? '' : ` (expected ${JSON.stringify(expected)})`}`)
@@ -30,6 +39,7 @@ function checkResult(label, compute, expected) {
   try {
     actual = compute()
   } catch (error) {
+    checks += 1
     failures += 1
     console.log(`FAIL ${label} -> threw: ${error.message}`)
     return
@@ -47,22 +57,51 @@ function readBundle(relative) {
 }
 
 /**
+ * The headings of a text, in the order they appear.
+ * @param {string} text - the text to read.
+ * @returns {string[]} the heading titles.
+ */
+function headings(text) {
+  return text
+    .split(/\r?\n/)
+    .map((line) => /^#{1,6}\s+(.+?)\s*$/u.exec(line))
+    .filter((match) => match !== null)
+    .map((match) => match[1])
+}
+
+/**
+ * The number a section title starts with.
+ * @param {string} title - a heading title.
+ * @returns {number|null} the leading number, or null when the title has none.
+ */
+function sectionNumber(title) {
+  const match = /^(\d+(?:\.\d+)*)/u.exec(title)
+  return match === null ? null : Number(match[1].split('.')[0])
+}
+
+/**
  * The host a scenario runs on: the services the bundle needs, and a registry
  * that reports the tools it holds.
  * @param {object} registered - collects the names of the tools the bundle registers.
  * @param {Array<object>} sections - collects the prompt sections the bundle adds.
+ * @param {object} [options] - the scenario's options.
+ * @param {boolean} [options.tools] - whether the host exposes a tool registry at all.
+ * @param {object} [options.skills] - the skill registry the host exposes.
  * @returns {object} the host context.
  */
-function hostServices(registered, sections = []) {
-  return {
+function hostServices(registered, sections = [], options = {}) {
+  const services = {
     systemPrompt: { section: (definition) => { sections.push(definition); return () => {} } },
     agents: { list: () => [], get: () => undefined, roots: () => [], isOwnedBy: () => false },
-    skills: { register: () => () => {} },
-    tools: {
+    skills: options.skills ?? { register: () => () => {} },
+  }
+  if (options.tools !== false) {
+    services.tools = {
       register: (definition) => { registered.push(definition.name); return () => {} },
       schemas: () => [{ name: 'subagent' }, { name: 'spawn_teammate' }],
-    },
+    }
   }
+  return services
 }
 
 const teams = { tryMembership: () => undefined }
@@ -125,6 +164,203 @@ async function scenarios(makeHost, label) {
     ctx.provide('commands', { register: () => () => {} })
     await tick()
     check(prefix('D no service means no primitive'), registered.slice(), [])
+  }
+
+  // --- G: the tool registry arrives after the plugin was applied ---------------
+  // The registry is read strictly: a service whose provider is not active yet
+  // reads as absent. A cold boot that sampled the registry once would skip the
+  // whole registration and drop every primitive for the session.
+  {
+    const registered = []
+    const ctx = makeHost(registered, [], { tools: false })
+    ctx.provide('agentTeams', teams)
+    ctx.provide('worktrees', worktrees)
+    ctx.provide('subagents', subagents)
+    ctx.plugin({ inject: bundle.inject, apply: bundle.apply })
+    await tick()
+    check(prefix('G nothing is registered before the tool registry arrives'), registered.slice(), [])
+    ctx.provide('tools', hostServices(registered).tools)
+    await tick()
+    check(prefix('G a late tool registry still registers every primitive'), registered.slice().sort(), ['swarm_child', 'swarm_task', 'swarm_worktree'])
+  }
+
+  // --- H: the tool registry is provided by a sibling that is still booting ----
+  // This is the cold boot the registry really comes from: another bundle
+  // provides it, and that bundle has not finished loading when this plugin is
+  // applied.
+  {
+    const registered = []
+    const ctx = makeHost(registered, [], { tools: false })
+    ctx.provide('agentTeams', teams)
+    ctx.provide('worktrees', worktrees)
+    ctx.provide('subagents', subagents)
+    ctx.plugin({
+      inject: ['lateToolRegistry'],
+      apply: (childCtx) => { childCtx.provide('tools', hostServices(registered).tools) },
+    })
+    ctx.plugin({ inject: bundle.inject, apply: bundle.apply })
+    await tick()
+    check(prefix('H a booting tool registry registers no primitive'), registered.slice(), [])
+    ctx.provide('lateToolRegistry', {})
+    await tick()
+    check(prefix('H the primitives register once the registry is really there'), registered.slice().sort(), ['swarm_child', 'swarm_task', 'swarm_worktree'])
+  }
+
+  // --- I: every service but the registry means no primitive ------------------
+  // The registry is where a tool is put. Without it there is nowhere to put
+  // one, so a primitive must not register.
+  {
+    const registered = []
+    const ctx = makeHost(registered, [], { tools: false })
+    ctx.provide('agentTeams', teams)
+    ctx.provide('worktrees', worktrees)
+    ctx.provide('subagents', subagents)
+    ctx.plugin({ inject: bundle.inject, apply: bundle.apply })
+    await tick()
+    check(prefix('I no tool registry means no primitive'), registered.slice(), [])
+  }
+
+  // --- J: the host's tool registry refuses a tool ----------------------------
+  // A host can refuse a tool: the registry throws. The bundle then owes three
+  // things, and this scenario holds it to all three. The refused tool is not
+  // left half-registered, the other primitives still register, and the refusal
+  // is reported instead of swallowed.
+  {
+    const registered = []
+    const refused = []
+    const warnings = []
+    const originalWarn = console.warn
+    console.warn = (...args) => { warnings.push(args.map((arg) => String(arg)).join(' ')) }
+    try {
+      const ctx = makeHost(registered, [], { tools: false })
+      ctx.provide('agentTeams', teams)
+      ctx.provide('worktrees', worktrees)
+      ctx.provide('subagents', subagents)
+      ctx.provide('tools', {
+        register: (definition) => {
+          if (definition.name === 'swarm_task') {
+            refused.push(definition.name)
+            throw new Error('this host refuses the task primitive')
+          }
+          registered.push(definition.name)
+          return () => {}
+        },
+        schemas: () => [{ name: 'subagent' }, { name: 'spawn_teammate' }],
+      })
+      ctx.plugin({ inject: bundle.inject, apply: bundle.apply })
+      await tick()
+    } finally {
+      console.warn = originalWarn
+    }
+    check(prefix('J the refusing registry was asked for the refused tool'), refused.slice(), ['swarm_task'])
+    check(prefix('J the refused tool is not registered'), registered.includes('swarm_task'), false)
+    check(prefix('J the other primitives still register'), registered.slice().sort(), ['swarm_child', 'swarm_worktree'])
+    check(prefix('J the refusal is reported'), warnings.some((line) => line.includes('swarm_task') && line.includes('refused')), true)
+  }
+
+  // --- K: the host's skill registry refuses a skill --------------------------
+  // A host can refuse a skill the way it can refuse a tool: the registry
+  // throws. The bundle then owes four things, and this scenario holds it to
+  // all four. The refused skill is not left half-registered, the other skills
+  // still register, the prompt still composes, and the refusal is reported
+  // once — a failure that keeps happening is one failure, not one report per
+  // render.
+  {
+    const registered = []
+    const sections = []
+    const refused = []
+    const warnings = []
+    const originalWarn = console.warn
+    console.warn = (...args) => { warnings.push(args.map((arg) => String(arg)).join(' ')) }
+    try {
+      const ctx = makeHost(registered, sections, {
+        skills: {
+          register: (definition) => {
+            if (definition.name === 'swarm-craft-python') {
+              refused.push(definition.name)
+              throw new Error('this host refuses the craft skill')
+            }
+            registered.push(definition.name)
+            return () => {}
+          },
+        },
+      })
+      ctx.provide('agentTeams', teams)
+      ctx.provide('worktrees', worktrees)
+      ctx.provide('subagents', subagents)
+      ctx.plugin({ inject: bundle.inject, apply: bundle.apply })
+      await tick()
+      const section = sections[0]
+      const prompt = section.text({ agent: { id: 'a1' } })
+      await tick()
+      const reports = () => warnings.filter((line) => line.includes('swarm-craft-python')).length
+      // The catalog is rebuilt on every render, so a host that keeps refusing
+      // is asked again on every render. The refusal is still one refusal.
+      section.text({ agent: { id: 'a1' } })
+      section.text({ agent: { id: 'a1' } })
+      await tick()
+      check(prefix('K the prompt still composes when a skill is refused'), typeof prompt === 'string' && prompt.length > 0, true)
+      check(prefix('K the refused skill is not registered'), registered.includes('swarm-craft-python'), false)
+      check(prefix('K the other skills still register'), registered.includes('swarm-engineering') && registered.includes('swarm-craft-shared'), true)
+      check(prefix('K the refusal is reported'), warnings.some((line) => line.includes('swarm-craft-python') && line.includes('refused')), true)
+      check(prefix('K a continuing refusal is reported once'), reports(), 1)
+      check(prefix('K the refused skill is tried again on the next render'), refused.length > 1, true)
+    } finally {
+      console.warn = originalWarn
+    }
+  }
+
+  // --- L: the catalog cannot be re-synchronized -------------------------------
+  // A host can accept a skill and then fail to release it. The bundle releases
+  // the skills it registered when their files change, and a host disposer that
+  // throws must not take the prompt down with it: the failure has to be
+  // reported, and the prompt has to keep composing.
+  //
+  // The bundle cannot be changed to make this happen, so the COPY is changed:
+  // the bundle runs from a sandbox, the file that moves is the sandbox's own,
+  // and the shipped files are never touched.
+  {
+    const sandbox = mkdtempSync(join(tmpdir(), 'swarm-sync-failure-'))
+    try {
+      const root = fileURLToPath(new URL('..', import.meta.url))
+      cpSync(join(root, 'index.js'), join(sandbox, 'swarm-bundle.mjs'))
+      cpSync(join(root, 'runtime-note.md'), join(sandbox, 'runtime-note.md'))
+      cpSync(join(root, 'prompt-overlay.md'), join(sandbox, 'prompt-overlay.md'))
+      cpSync(join(root, 'swarm-prompt.md'), join(sandbox, 'swarm-prompt.md'))
+      cpSync(join(root, 'skills'), join(sandbox, 'skills'), { recursive: true })
+      const copy = await import(pathToFileURL(join(sandbox, 'swarm-bundle.mjs')).href)
+      const sections = []
+      const warnings = []
+      const originalWarn = console.warn
+      console.warn = (...args) => { warnings.push(args.map((arg) => String(arg)).join(' ')) }
+      try {
+        const ctx = makeHost([], sections, {
+          skills: { register: () => () => { throw new Error('this host cannot release a skill') } },
+        })
+        ctx.plugin({ inject: copy.inject, apply: copy.apply })
+        await tick()
+        const section = sections[0]
+        // The first render registers the skills and collects their disposers.
+        const before = section.text({ agent: { id: 'a1' } })
+        // The sandbox's own copy of the note moves, so the next render sees a
+        // changed stamp and releases the skills before it registers them again.
+        const note = join(sandbox, 'runtime-note.md')
+        const moved = new Date(Date.now() + 10000)
+        utimesSync(note, moved, moved)
+        const after = section.text({ agent: { id: 'a1' } })
+        const again = section.text({ agent: { id: 'a1' } })
+        const reports = () => warnings.filter((line) => line.includes('could not be synchronized')).length
+        check(prefix('L the prompt composes before the catalog is released'), typeof before === 'string' && before.length > 0, true)
+        check(prefix('L the prompt still composes when the catalog cannot be released'), typeof after === 'string' && after.length > 0, true)
+        check(prefix('L the catalog failure is reported'), warnings.some((line) => line.includes('could not be synchronized') && line.includes('this host cannot release a skill')), true)
+        check(prefix('L a continuing catalog failure is reported once'), reports(), 1)
+        check(prefix('L the prompt keeps composing after the failed release'), typeof again === 'string' && again.length > 0, true)
+      } finally {
+        console.warn = originalWarn
+      }
+    } finally {
+      rmSync(sandbox, { recursive: true, force: true })
+    }
   }
 
   // --- E: the command registers late and the prompt then advertises it -------
@@ -271,10 +507,17 @@ async function scenarios(makeHost, label) {
     bundle.extractSection(skill, '13. Requirement Handover').startsWith('## 13. Requirement Handover'), true)
   checkResult('V3 a section carries the user prose under it', () =>
     bundle.extractSection(skill, '13. Requirement Handover').includes('A worker cites the requirement as'), true)
-  checkResult('V3 a section stops before the next section of the same level', () =>
-    !bundle.extractSection(skill, '13. Requirement Handover').includes('## 14. Native Verification Surfaces'), true)
-  checkResult('V3 the assignment contract stops before definition of success', () =>
-    !bundle.extractSection(skill, '8. Assignment and Reporting Contract').includes('## 9. Definition of Success'), true)
+  // The next section is named by the skill itself, so the check does not pin a
+  // title another lane may rename: what must not survive the extract is a
+  // heading of the next section number, at any level.
+  checkResult('V3 a section stops before the next section of the same level', () => {
+    const section = bundle.extractSection(skill, '13. Requirement Handover')
+    return !headings(section).some((title) => sectionNumber(title) === 14)
+  }, true)
+  checkResult('V3 the assignment contract stops before definition of success', () => {
+    const section = bundle.extractSection(skill, '8. Assignment and Reporting Contract')
+    return !headings(section).some((title) => sectionNumber(title) === 9)
+  }, true)
   checkResult('V3 the assignment contract carries its own body', () =>
     bundle.extractSection(skill, '8. Assignment and Reporting Contract').includes('Each worker must understand the assignment before execution'), true)
   checkResult('V3 the orchestration section starts where it was asked for', () => {
@@ -285,8 +528,15 @@ async function scenarios(makeHost, label) {
     bundle.extractSection(overlay, '12. Swarm Orchestration').includes('### 12.5 Assignment Brief'), true)
   checkResult('V3 a section of the same level ends the one before it', () => {
     const section = bundle.extractSection(skill, '2. Common Engineering Principles')
-    return !section.includes('## 2.7') && section.includes('### 2.1 Work Within the Assignment')
+    // The shipped skill nests its code-health section one tier deeper
+    // (`### 2.7`), so the section runs to the next heading of its own level,
+    // which is `## 3. Developer Role`, and the deeper section stays inside.
+    return !section.includes('## 3. Developer Role') &&
+      section.includes('### 2.1 Work Within the Assignment') &&
+      section.includes('### 2.7 Code Health and Change Risk Assessment')
   }, true)
+  checkResult('V3 a subsection of a deeper level stays inside its section', () =>
+    bundle.extractSection(skill, '2. Common Engineering Principles').includes('#### 2.7.1 Keep the Assessments Separate'), true)
   checkResult('V3 a heading that is not there yields null', () =>
     bundle.extractSection(skill, '99. No Such Section'), null)
   checkResult('V3 a title is matched without regard to case', () =>
@@ -310,22 +560,42 @@ async function scenarios(makeHost, label) {
     bundle.extractUntil(skill, '99. No Such Section'), null)
 }
 
+// The real-runtime arm runs when this machine has an installed host: the
+// packed asar is read, cordis and its kit are extracted into the OS temp
+// directory, and the scenarios run against them. When there is no host, the
+// arm is SKIPPED and says so - an arm that did not run must never read as an
+// arm that passed.
 const host = await loadHostCordis()
+let hostArm = 'SKIPPED (no host runtime found on this machine)'
 if (host !== null) {
-  console.log(`host runtime: ${host.path}`)
-  await scenarios((registered, sections) => {
+  hostArm = `ran (${host.source})`
+  console.log(`host runtime: ${host.moduleId} (the host's own copy, extracted from its container; the extraction is temporary and goes when the run ends)`)
+  console.log(`host runtime source: ${host.source}`)
+  await scenarios((registered, sections, options) => {
     const ctx = new host.module.Context()
-    for (const [name, service] of Object.entries(hostServices(registered, sections))) ctx.provide(name, service)
+    for (const [name, service] of Object.entries(hostServices(registered, sections, options))) ctx.provide(name, service)
     return ctx
   }, 'host runtime')
 } else {
-  console.log('host runtime: not found on this machine - the local model runs the scenarios instead')
+  console.log('host runtime: NOT FOUND - the [host runtime] arm is SKIPPED, not passed')
+  console.log(`host runtime: looked at ${asarCandidates().join(', ')}`)
+  console.log('host runtime: set DSH_APP_ASAR or DSH_INSTALL_ROOT to point the suite at an installed host')
 }
-await scenarios((registered, sections) => {
+await scenarios((registered, sections, options) => {
   const ctx = new ModelContext()
-  for (const [name, service] of Object.entries(hostServices(registered, sections))) ctx.provide(name, service)
+  for (const [name, service] of Object.entries(hostServices(registered, sections, options))) ctx.provide(name, service)
   return ctx
 }, 'local model')
 
-console.log(failures === 0 ? 'ALL CHECKS PASSED' : `${failures} CHECK(S) FAILED`)
+console.log(`SUITE ARM: host runtime = ${hostArm}`)
+console.log(`SUITE CHECKS: ${checks}`)
+if (failures === 0) {
+  if (host === null) {
+    console.log(`HOST RUNTIME ARM SKIPPED - NOT VERIFIED (no host runtime found on this machine) - ${checks} checks passed, the host runtime was not exercised`)
+  } else {
+    console.log(`ALL CHECKS PASSED (${checks} checks) - host runtime arm: ${hostArm} - local model arm: ran`)
+  }
+} else {
+  console.log(`${failures} CHECK(S) FAILED - host runtime arm: ${hostArm} - local model arm: ran`)
+}
 process.exitCode = failures === 0 ? 0 : 1

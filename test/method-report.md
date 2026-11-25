@@ -7,6 +7,13 @@ Date of this revision: the five-file layout, after the third restructure.
 
 ---
 
+> **This report records the five-file layout of its own round, and it is kept as
+> that record.** The bundle now ships nine craft files under
+> `skills/swarm-engineering/` and registers ten skills with the host; the
+> contract of record is the one the suites assert in `test/method.test.mjs`.
+> Where the body below says "five craft files" or "six skills", it means the
+> layout of this round, not the bundle today.
+
 ## 1. What I changed
 
 I own the `test/` directory and nothing else. The files I changed in this

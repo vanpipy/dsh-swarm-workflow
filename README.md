@@ -7,9 +7,14 @@ methods (Developer, Tester, Reviewer) the swarm runs on.
 
 ## The boundary
 
-The bundle ships the user's own text **byte for byte** and keeps every
-host-specific fact in one separate file. Nothing in the shipped text is
-rewritten for this host, and no host fact is written into the shipped text.
+The bundle ships the user's own text, carried from the canonical source, and
+keeps every host-specific fact in one separate file. The three shipped policy
+files are the user's text with this host's surfaces substituted for the
+canonical runtime's; every such passage is listed, with its reason, in
+[`docs/host-adaptation.md`](docs/host-adaptation.md) and
+[`docs/host-adaptation.json`](docs/host-adaptation.json). A passage the record
+does not list is identical to the canonical, character for character, and the
+plugin composes a view of the shipped text at runtime instead of rewriting it.
 
 | File | Owner | What it is |
 | --- | --- | --- |
@@ -55,7 +60,7 @@ file never drift apart.
 | Coordinator prompt | injected into the main agent's system prompt (`swarm-workflow:swarm`) |
 | Worker prompt | injected into every delegated agent |
 | `swarm-engineering` skill | the role methods, loaded on demand |
-| `swarm-craft-*` skills | the craft guidance: `swarm-craft-shared`, one per role (`developer`, `tester`, `reviewer`) and one per language (`python`) |
+| `swarm-craft-*` skills | the craft guidance: `swarm-craft-shared`, one per role (`developer`, `tester`, `reviewer`) and one per language (`python`, `java`, `go`, `typescript`, `rust`) |
 | `swarm_worktree` | gives a lane its own Git worktree |
 | `swarm_task` | reads and updates the shared team board |
 | `swarm_child` | lists, steers and stops the delegated child lanes |
@@ -121,30 +126,42 @@ skills/
 
 | Section | What it is |
 | --- | --- |
-| 1 | how to use the directory, and which file owns the process and which the craft |
+| 1 | how to use this file: which file owns the process and which the craft |
 | 2 | the three checks that hold in every language: make the check falsifiable, re-derive every number a second way, validate where the artifact runs |
 | 3 | the pieces that hold in every language: boundaries, types, errors, dependencies, state, time, the outside world, performance, tests, security, diagnostics, naming |
 | 4 | the same piece in another stack |
-| 5 | what the directory does not cover |
+| 5 | what this directory does not cover |
 
 ### The role files
 
 | File | What it is |
 | --- | --- |
-| `developer.md` | name the target before the edit, shape the change, make the code say what it means, prove it as you go, the language pieces |
-| `tester.md` | choose the oracle, make the check discriminate, cover the boundary rather than the middle, prove the check can fail, report honestly |
-| `reviewer.md` | read the change as a claim, re-derive the evidence yourself, the review smells, hunt the check that cannot fail, name what you did not check, the severity vocabulary |
+| `developer.md` | 1 how to use this file; 2 name the target before the edit; 3 shape the change; 4 make the code say what it means; 5 prove it as you go; 6 the language pieces |
+| `tester.md` | 1 how to use this file; 2 choose the oracle; 3 make the check discriminate; 4 cover the boundary, not the middle; 5 prove the check can fail; 6 report honestly |
+| `reviewer.md` | 1 how to use this file; 2 read the change as a claim; 3 re-derive the evidence yourself; 4 the review smells; 5 hunt the check that cannot fail; 6 name what you did not check; 7 the severity vocabulary |
+
+Each row names every section of its file, so a brief can point at one by number.
+The rule the whole index follows: every craft file opens with a "how to use this
+file" section — section 1 in the shared craft and in the three role files,
+section 0 in each language file — and the sections after it are the file's own.
 
 ### The language files
 
 One file per language: `python.md`, `java.md`, `go.md`, `typescript.md` and
-`rust.md`. Each carries the same nineteen sections, one per topic — the surface
-and the version floor, typing, data modelling, collections, iteration and
-laziness, errors, resources, files and paths, the shell and the outside world,
-time and clocks, concurrency, testing, the command line, performance, style and
-documentation, dependencies and environments, logging and diagnostics, security,
-and the common traps — in that language's own idioms. A language that deserves
-its own file gets one beside it.
+`rust.md`. Each opens with section 0 (how to use this file) and then carries
+the same nineteen topics, one per section — the surface and the version floor,
+typing, data modelling, collections, iteration, errors, resources, files and
+paths, the shell and the outside world, time and clocks, concurrency, testing,
+the command line, performance, style and documentation, dependencies and
+environments, logging and diagnostics, security, and the common traps — with
+each section titled and written in that language's own idioms. The topics are
+the same; the section titles are worded per language, and four files word one
+of theirs differently: `go.md` names its fifth section
+"Iteration and the loop variable" (Go has no lazy sequence), `typescript.md`
+names its second "Typing and the compiler options", `java.md` names its
+fifteenth "Style, naming and documentation comments", and `rust.md` names its
+sixth "Errors and the Result type". A language that deserves its own file gets
+one beside it.
 
 The craft reaches the lanes by path and by name. The runtime note names the
 files where the Coordinator writes a brief and where a lane reads them, and
@@ -208,11 +225,13 @@ user's to start.
 
 ## The validation record
 
-This bundle has been run against two test beds: one that asked whether a lane
-which loads the craft guidance produces a different artefact from a lane that
-does not, and one that asked whether the workflow holds when the same contract
-is implemented across five languages. Their requirement sets, decisions, lane
-reports and acceptance reports are in [`docs/validation/`](docs/validation/README.md).
+This bundle has been run against three test beds: `swarm-lab`, which asked
+whether the workflow, the host surfaces and code quality hold when a swarm runs
+the work; `craft-lab`, which asked whether a lane that loads the craft guidance
+produces a different artefact from a lane that does not; and `mixed-lab`, which
+asked whether the workflow holds when the same contract is implemented across
+five languages. Their requirement sets, decisions, lane reports and acceptance
+reports are in [`docs/validation/`](docs/validation/README.md).
 
 The acceptance reports there carry their own boundary sections: what was
 demonstrated, and what this host could not verify. Two findings from them are
@@ -297,10 +316,10 @@ not the install route.
 
 ```
 index.js                      the plugin: prompt section, skill, tools, /swarm command
-prompt-overlay.md             the global execution policy (the user's text, verbatim)
-swarm-prompt.md               the delegation briefing (the user's text, verbatim)
+prompt-overlay.md             the global execution policy (the user's text, adapted to this host — see docs/host-adaptation.md)
+swarm-prompt.md               the delegation briefing (the user's text, adapted to this host — see docs/host-adaptation.md)
 runtime-note.md               the host note: the host facts this plugin wrote
-skills/swarm-engineering/swarm-engineering.md  the role methods (the user's text, verbatim)
+skills/swarm-engineering/swarm-engineering.md  the role methods (the user's text, adapted to this host — see docs/host-adaptation.md)
 skills/swarm-engineering/shared.md   the shared craft every lane uses (the plugin's prose)
 skills/swarm-engineering/developer.md  the developer's craft (the plugin's prose)
 skills/swarm-engineering/tester.md   the tester's craft (the plugin's prose)
@@ -309,7 +328,10 @@ skills/swarm-engineering/languages/  the language pieces, one file per language 
 cordis.patch.yml              the profile row (id: swarm-workflow)
 client.js, locale/, icon.svg  the Web-GUI side
 test/                         the suite that travels with the bundle
-docs/validation/              the validation record: the two test beds' evidence (not shipped in the package)
+tools/                         the drift guard: the section-by-section checker and its Node wrapper
+docs/host-adaptation.md       the record of every passage of the shipped text adapted to this host, with its reason
+docs/host-adaptation.json     the same record, machine-readable: the sections, both hashes and the reason
+docs/validation/              the validation record: the three test beds' evidence (it ships with the package, like the rest of docs/)
 ```
 
 ## Tests
@@ -319,24 +341,61 @@ npm test
 ```
 
 The runner starts every suite in its own process and exits non-zero when one
-fails. The suites under `test/` cover the prompt composition and gating
-(`render-prompt.test.mjs`), the three primitives against stub host services
-(`swarm-tools.test.mjs`), the parsing and registration timing (`gating.test.mjs`),
-the verbatim guarantee — that the shipped text still carries the user's
-own anchors and none of the host's (`verbatim.test.mjs`) — and the skill
-re-registration stamp, which has to cover the runtime note, the skill file and
-every craft file (`skill-stamp.test.mjs`), and the craft wiring — that the note
-names the craft files, that each path is resolved where the bundle lives, that
-each craft file is registered as a skill of its own, and that a CRLF checkout
-still composes (`method.test.mjs`). The method suite also reads the craft
-files themselves: it asserts that each of the five still carries the sections,
-the three checks, the twelve shared pieces and the nineteen Python sections its
-design names, and that every one of them stays host-neutral — no plugin marker,
-no host name, no machine path. The gating suite runs
-the same scenarios twice: against the host's real runtime when this machine
-has one, and against a local model of the host's service semantics
-(`test/lib/cordis-model.mjs`) when it does not — so the suite runs on a
-machine with no DSH host at all.
+fails, and its last line names how many suites ran and how many checks they
+made (`ALL SUITES PASSED (8 suites, N checks)`). The suites under `test/` cover
+the prompt composition and gating (`render-prompt.test.mjs`), the three
+primitives against stub host services (`swarm-tools.test.mjs`), the parsing and
+registration timing (`gating.test.mjs`), the verbatim guarantee — that the
+shipped text still carries the user's own anchors and none of the host's
+(`verbatim.test.mjs`) — and the skill re-registration stamp, which has to cover
+the runtime note, the skill file and every craft file (`skill-stamp.test.mjs`),
+the craft wiring — that the note names the craft files, that each path is
+resolved where the bundle lives, that each craft file is registered as a skill
+of its own, and that a CRLF checkout still composes (`method.test.mjs`), and
+the encoding of the shipped text — that every text file is valid UTF-8 and that
+no replacement character or mojibake signature survived outside the historical
+quotes under `docs/validation/` (`encoding.test.mjs`). The eighth step is the
+policy self-check, which compares the bundle against its own record and needs
+no canonical repository. The method suite also reads the craft files
+themselves: it asserts that each of the nine still carries the sections its
+design names — the three checks and the twelve shared pieces in the shared
+craft, and the nineteen numbered sections each language file carries, which are
+the same count but not the same titles — and that every one of them stays
+host-neutral — no plugin marker, no host name, no machine path, and no surface
+of another host. The
+gating suite runs the same scenarios twice: against the host's real runtime
+when this machine has one, and against a local model of the host's service
+semantics (`test/lib/cordis-model.mjs`) when it does not — so the suite runs on
+a machine with no DSH host at all.
+
+The method suite also checks the README against the bundle's own record: that
+the README claims no unmodified shipping of text the record says was adapted,
+that it describes the drift guard as the section-by-section comparison the
+guard performs, that the craft index names every section of the craft files it
+lists, and that the number of test beds it names is the number the validation
+record names. The checks read the claims themselves, not a copy of the
+wording, so a legitimate rewording does not break them.
+
+The shipped text is carried from a canonical source that lives in another
+repository, so that pair needs its own gate. The guard is
+`tools/check-policy-sync.ps1`, and it compares the three shipped policy files
+**section by section** against the canonical, using the record in
+`docs/host-adaptation.json`. A section nobody adapted must be identical to the
+canonical, character for character; an adapted section must be listed with
+both hashes and a reason. An unrecorded difference, an out-of-date hash, an
+entry with no reason and a record that lists a section which no longer differs
+all fail; a heading that was renamed is recorded with its canonical wording in
+`canonicalHeading`, so a deliberate rename is an adaptation and not a failure.
+The canonical side is read at the revision the record pins, and the canonical's
+working tree is reported next to it, so a canonical that has moved is its own
+failure instead of a quiet change to the comparison. The nine craft files are
+compared through the documented port transform and reported separately from the
+policy files. Run it with `npm run check:policy` (the bundle against the
+canonical) or `node tools/check-policy.mjs --self` (the bundle half only, which
+needs no canonical repository); the command exits 0 when every comparison it
+made agreed, 1 when something drifted, failed, or a comparison could not be
+made at all, and 2 when the guard could not run — an argument it does not know,
+no PowerShell to run it with, or no bundle tree to compare.
 
 ## Notes
 
@@ -346,9 +405,13 @@ machine with no DSH host at all.
   facts into the shipped text.
 * `swarm_worktree` appears only where the host exposes the worktree service
   (the `worktrees` bundle). Where it is absent, the prompt says so.
-* The execution policy, the delegation briefing and the skill text are shipped
-  verbatim. Every host-specific fact lives in `runtime-note.md`, and the plugin
-  composes a view of the shipped text instead of editing it.
+* The execution policy, the delegation briefing and the skill text are the
+  user's own text, carried from the canonical and adapted to this host where
+  the canonical named a surface this host does not have. Every adaptation is
+  listed, with its reason, in [`docs/host-adaptation.md`](docs/host-adaptation.md);
+  every other passage is identical to the canonical, character for character.
+  Every host-specific fact lives in `runtime-note.md`, and the plugin composes
+  a view of the shipped text instead of editing it.
 * The files under `skills/swarm-engineering/` are plugin prose as well: the
   craft guidance, kept in their own directory under the skill they belong to so
   it can grow without touching the note or the user's text. The note names

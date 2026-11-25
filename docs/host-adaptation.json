@@ -1,0 +1,312 @@
+{
+    "workItem":  "dsh-policy-adaptation",
+    "canonicalRepo":  "D:\\project\\lazible-jcode",
+    "canonicalPath":  "config",
+    "canonicalCommit":  "f301fe05eecf69b41913efe00b6f3a33b1c2af1b",
+    "generatedOn":  "2026-11-26",
+    "sections":  [
+                     {
+                         "file":  "prompt-overlay.md",
+                         "heading":  "2.2.2 Tool-Call Budgets",
+                         "canonicalSha256":  "B58C000373BB5D7F0216BAAFC66102132514F3B9CDD06D5DDA09C00433AEAB78",
+                         "bundleSha256":  "0F9AF31FB7DAE263C26523ED7931D7F37BADC2E0F4C91517DE0DC876BDCF56CF",
+                         "reason":  "The round\u0027s record moved from the todo lane\u0027s row to the round ledger row (`todo_write`), and a new paragraph states that coordination calls - spawning a lane, messaging a lane, waiting on a lane, writing a ledger row or a board task - are not reads and do not consume the read budget. The paragraph now names all 23 coordination surfaces this host offers, `job_list` among them, which is what the surfaces column records.",
+                         "surfaces":  [
+                                          "ask_user_question",
+                                          "create_goal",
+                                          "get_goal",
+                                          "interrupt_agent",
+                                          "job_kill",
+                                          "job_list",
+                                          "job_output",
+                                          "list_agents",
+                                          "send_message",
+                                          "spawn_teammate",
+                                          "subagent",
+                                          "subagent_fork",
+                                          "swarm_child",
+                                          "swarm_task",
+                                          "swarm_worktree",
+                                          "team_task_create",
+                                          "team_task_get",
+                                          "team_task_list",
+                                          "team_task_update",
+                                          "todo_write",
+                                          "update_goal",
+                                          "wait_agent",
+                                          "workflow"
+                                      ]
+                     },
+                     {
+                         "file":  "prompt-overlay.md",
+                         "heading":  "2.2.3 The End Event Binds the Next Action",
+                         "canonicalSha256":  "EB39901A089990762EB0ADC81743CC55BDCF321DC41AF57411CB14A96D85F74F",
+                         "bundleSha256":  "DA0A980902D67B393F331A406EBE3E6989B451AEA555EABFECCC1DAC79E29C0A",
+                         "reason":  "The \u0027a plan or todo write\u0027 in the list of what may follow the end event became a `todo_write` round-ledger row, and a new sentence says the report has a destination: it reaches the Coordinator, which reads it as evidence and not as acceptance.",
+                         "surfaces":  [
+                                          "todo_write"
+                                      ]
+                     },
+                     {
+                         "file":  "prompt-overlay.md",
+                         "heading":  "2.2.4 Bounding the Read Phase of a Direct Task",
+                         "canonicalSha256":  "16FAF4C531CE80B24AB02B06B506497941538CBF78EEFDC162D3C7F170F7149C",
+                         "bundleSha256":  "5931DBB8BB8F87958064ADFE8C256856CF2BC186064E53B5B5848750384C5948",
+                         "reason":  "A new paragraph says where the target set is written: one `todo_write` row per round for a direct task, the target list in the brief for a delegated lane, and `.swarm/requirements/\u003cwork-item\u003e.md` as the durable copy.",
+                         "surfaces":  [
+                                          "todo_write"
+                                      ]
+                     },
+                     {
+                         "file":  "prompt-overlay.md",
+                         "heading":  "2.2.5 Bounding the Verification Phase",
+                         "canonicalSha256":  "92FFBF9A4355D002A9B1FDD18369C04433C69B1F8EEAD4DFD0B9F8D6D19B270E",
+                         "bundleSha256":  "EBE84DD913BCA1AF9C838A987F3A71D622937B06E82DBA4DB75C43C256FD8F26",
+                         "reason":  "\u0027Files under scratch/\u0027 became \u0027a probe or scratch file\u0027, and the artefacts under `.swarm/` - the requirement set, the decisions, the lane reports - are named as the evidence. The section names no host surface, so the surfaces column is empty.",
+                         "surfaces":  [
+
+                                      ]
+                     },
+                     {
+                         "file":  "prompt-overlay.md",
+                         "heading":  "11. Policy and Tool Boundaries",
+                         "canonicalSha256":  "9F99BF2BE76A4F0F1526DCA8103E0191A0F9BD340A311B7E862D726A7675CBEB",
+                         "bundleSha256":  "CD902B3B7B67692A9E244C7C73CBFCE5D33D62DDBCAD8C75DF84E5002B739C1C",
+                         "reason":  "\u0027the active Jcode version\u0027 became \u0027the active runtime version\u0027, and the `swarm` tool description became the delegation briefing in `swarm-prompt.md`.",
+                         "surfaces":  [
+
+                                      ]
+                     },
+                     {
+                         "file":  "prompt-overlay.md",
+                         "heading":  "12. Swarm Orchestration",
+                         "canonicalSha256":  "D325D8C51F27F026A91BF3F15FE833B988E1EB4D383CCE554645AB87D1BAFA40",
+                         "bundleSha256":  "38203C6ADA9540976796BBBAA7B033F58B33470018BDCA2B35283D69B8F82CF0",
+                         "reason":  "The preamble\u0027s account of the `swarm` tool description and its model routing became the delegation briefing and the delegation surfaces this host has: `subagent`, `subagent_fork`, `workflow` and `spawn_teammate`.",
+                         "surfaces":  [
+                                          "subagent",
+                                          "subagent_fork",
+                                          "workflow",
+                                          "spawn_teammate"
+                                      ]
+                     },
+                     {
+                         "file":  "prompt-overlay.md",
+                         "heading":  "12.4 Independent Verification",
+                         "canonicalSha256":  "855BBCF37BCB541E4D9A16E4C20C3ECE9FC4DA8EA9683344B7E7BE3AC6F18264",
+                         "bundleSha256":  "12A3A49E5FE91233F14F2F4B2D37434DEBCB878788BF8F0F2ADB74E2FF5912EA",
+                         "reason":  "The native review commands (`/autoreview`, `/autojudge`) and their session flags do not exist here and no tool exposes one, so the section says so and gives the two paths this host supports: review the change in your own tree, or spend a worker.",
+                         "surfaces":  [
+
+                                      ]
+                     },
+                     {
+                         "file":  "prompt-overlay.md",
+                         "heading":  "12.5 Assignment Brief",
+                         "canonicalSha256":  "B277C49C170BBF4E2DDF5535911C67B659797F25C5A2C36589B132D7BC1F7250",
+                         "bundleSha256":  "D550FBD913E75A03C293C0082FB90A4896AD8A0FCE456993902B84D2AB60FBCD",
+                         "reason":  "\u0027every field the `swarm` tool description lists\u0027 became \u0027every field the delegation briefing lists\u0027.",
+                         "surfaces":  [
+
+                                      ]
+                     },
+                     {
+                         "file":  "prompt-overlay.md",
+                         "heading":  "12.7 Parallelism, Waiting, and Recovery",
+                         "canonicalSha256":  "3B434EACF1B7A95785428A86767DE5CB403EF23862F77157FFB1040C9C973E18",
+                         "bundleSha256":  "D2AFA51248B03A5B16C05A4CBFE3B276D449553A743729EF4BC6EDB6AF13D4E1",
+                         "reason":  "`swarm await_members` and the `[agents] swarm_stall_*` settings have no counterpart here: the host notifies the coordinator when a child finishes, `wait_agent` waits for the next status, message or task change, `job_output` collects a background job, and a stalled lane is met with a `wait_agent` timeout and then `interrupt_agent` or a child-lane stop. The rule against polling with sleeps is unchanged.",
+                         "surfaces":  [
+                                          "interrupt_agent",
+                                          "job_output",
+                                          "swarm_child",
+                                          "wait_agent"
+                                      ]
+                     },
+                     {
+                         "file":  "prompt-overlay.md",
+                         "heading":  "12.8 Enforcing a Lane\u0027s Bound",
+                         "canonicalSha256":  "19580B7B364A6A6C7F15B27A1D1E4FD0C0362A928FD8D1AB759574ACA7F769AB",
+                         "bundleSha256":  "1652D0E53A9093B0D461E0A7498B1E13E31B41ABAE8240092886962CAB8125A4",
+                         "reason":  "The escalation ladder now names this host\u0027s calls - `list_agents` / `swarm_child action: list`, `send_message` / `swarm_child action: steer`, `swarm_child action: stop` / `interrupt_agent` / `job_kill` - and the record of what was completed and what was left unverified goes to the round ledger row and the board task. There is no force variant here, so the force bullet is gone.",
+                         "surfaces":  [
+                                          "interrupt_agent",
+                                          "job_kill",
+                                          "list_agents",
+                                          "send_message",
+                                          "swarm_child"
+                                      ]
+                     },
+                     {
+                         "file":  "swarm-prompt.md",
+                         "heading":  "(preamble)",
+                         "canonicalSha256":  "ADF8A6735E08587BEFB6F38EA00C87D60F2BDE9614EE3527BDD90374C1264CE0",
+                         "bundleSha256":  "EBCBAFE25B5B351B2039EEDA31477E07544DEE6E63AB4A18CF7BBF183C69B8E4",
+                         "reason":  "The file no longer describes itself as the `swarm` tool description with two `~/.jcode` override paths: it is the delegation briefing the host composes into the Coordinator\u0027s prompt, and there is no override path here - the bundle markdown IS the shipped text. The preamble now says that the briefing reaches the Coordinator\u0027s prompt only, that a worker\u0027s view carries the host facts written for it plus the policy sections up to the worker cut, and that the briefing stays with the Coordinator; and the sentence that named the role the tool description called the Team Lead now names the Coordinator.",
+                         "surfaces":  [
+                                          "interrupt_agent",
+                                          "job_kill",
+                                          "job_output",
+                                          "list_agents",
+                                          "send_message",
+                                          "spawn_teammate",
+                                          "subagent",
+                                          "subagent_fork",
+                                          "swarm_child",
+                                          "swarm_task",
+                                          "team_task_create",
+                                          "team_task_get",
+                                          "team_task_list",
+                                          "team_task_update",
+                                          "todo_write",
+                                          "wait_agent",
+                                          "workflow"
+                                      ]
+                     },
+                     {
+                         "file":  "skills/swarm-engineering/swarm-engineering.md",
+                         "heading":  "(preamble)",
+                         "canonicalSha256":  "775DC816FC595074813C305BD06CC805AABD1AE570BB809492D921A7157CE06F",
+                         "bundleSha256":  "CD1BDD705F9127A5C1741B909AF259CE61EE2E3C3A07A79A9C744FEDD97666B4",
+                         "reason":  "The frontmatter description dropped the word \u0027Jcode\u0027: the catalog line is host-visible, so it names swarm workers.",
+                         "surfaces":  [
+
+                                      ]
+                     },
+                     {
+                         "file":  "skills/swarm-engineering/swarm-engineering.md",
+                         "heading":  "1. Purpose",
+                         "canonicalSha256":  "D7D8FFA452F4B68F21B90E4295C2D1F89367377B938AFF91A64E1FE880C20CCA",
+                         "bundleSha256":  "D9C94B3E470F66B71901A792AB4D58CAB31B07A9C46E50D731837917798E5D0A",
+                         "reason":  "The `swarm` tool description and its model routing became the delegation briefing and the surfaces a coordinator dispatches with.",
+                         "surfaces":  [
+
+                                      ]
+                     },
+                     {
+                         "file":  "skills/swarm-engineering/swarm-engineering.md",
+                         "heading":  "2.3.3 The End Event Binds the Next Action",
+                         "canonicalSha256":  "B1BE9415FF44E67C31BC0F0EA1C3D36A350BDC6601534701BCEBBA777B8A1760",
+                         "bundleSha256":  "1DB041AD0AE316B94C070AF5BD93495DDF48A4E60B2EC70220603F2B3234C731",
+                         "reason":  "\u0027a plan or todo write\u0027 became \u0027a plan or a `todo_write` round-ledger row\u0027.",
+                         "surfaces":  [
+                                          "todo_write"
+                                      ]
+                     },
+                     {
+                         "file":  "skills/swarm-engineering/swarm-engineering.md",
+                         "heading":  "2.3.5 Bounding the Verification Phase",
+                         "canonicalSha256":  "87A063B5D025C140CA2971A99124D3529CED084B7C8C357B07EBEE43DAC75C3B",
+                         "bundleSha256":  "A21AD72E5964F0B36253A2406D6509766E2ADC0578B7982D15E9F18D789B28FD",
+                         "reason":  "\u0027Files under scratch/\u0027 became \u0027a probe or scratch file\u0027, and the artefacts written under `.swarm/` - the requirement set, the decisions, the lane reports - are named as the evidence.",
+                         "surfaces":  [
+
+                                      ]
+                     },
+                     {
+                         "file":  "skills/swarm-engineering/swarm-engineering.md",
+                         "heading":  "2.4 Phase Progression",
+                         "canonicalSha256":  "24B98310A829A25DD2819E8801BE169B81BCBFC2DF7F4C8716E4E41DF22AC3B5",
+                         "bundleSha256":  "6BBC57107E19D9D2051B68615418D57EC7496136C9C2D4ED273C741D961BDA4D",
+                         "reason":  "\u0027A todo, a plan, or a scratch file\u0027 became \u0027A ledger row, a plan, or a scratch file\u0027, and the ledger row is the `todo_write` round ledger this host writes.",
+                         "surfaces":  [
+                                          "todo_write"
+                                      ]
+                     },
+                     {
+                         "file":  "skills/swarm-engineering/swarm-engineering.md",
+                         "heading":  "8. Assignment and Reporting Contract",
+                         "canonicalSha256":  "AF787F07F582EFF1CBC33E28B162FFB6E8A71240F3406FB976768A6C93C09E7D",
+                         "bundleSha256":  "2533B252E6364BBA0680FFC7FBD253B9F175866C2D8E38CEE7E1E3A6205D6A2F",
+                         "reason":  "The requirement is carried by the board task the worker takes, whose `description` holds the requirement block, with the durable copy under `.swarm/requirements/\u003cwork-item\u003e.md`. The board task is created with `team_task_create` and read back with `swarm_task`.",
+                         "surfaces":  [
+                                          "team_task_create",
+                                          "swarm_task"
+                                      ]
+                     },
+                     {
+                         "file":  "skills/swarm-engineering/swarm-engineering.md",
+                         "heading":  "10. Skill Availability and Execution",
+                         "canonicalSha256":  "0B310D0F452B0B3CC8188E83741BC02A327BA926088AB0AA763CE83C7591C751",
+                         "bundleSha256":  "76A15D0FE87944173A5B0AB9E3F96848A131141DAA637645F2FD024C4220C528",
+                         "reason":  "\u0027the active Jcode version\u0027 became \u0027the active runtime version\u0027.",
+                         "surfaces":  [
+
+                                      ]
+                     },
+                     {
+                         "file":  "skills/swarm-engineering/swarm-engineering.md",
+                         "heading":  "11. Coordinator Practice",
+                         "canonicalSha256":  "F4305D25D55C122E836EF13DDD3F1B00FE292AD391108E7C791B1C0EF34AEA6F",
+                         "bundleSha256":  "91BB40FE93C4406AFCB226D1D5968823C6BE44DF8EFB5BD24F4E971A23253839",
+                         "reason":  "`swarm await_members` became the host\u0027s wait and collect mechanics (the host notifies the coordinator, `wait_agent` waits, `job_output` with `wait: true` collects a background job), and the todo list became the `todo_write` round ledger.",
+                         "surfaces":  [
+                                          "job_output",
+                                          "todo_write",
+                                          "wait_agent"
+                                      ]
+                     },
+                     {
+                         "file":  "skills/swarm-engineering/swarm-engineering.md",
+                         "heading":  "11.1 Stopping a Lane That Overran Its Brief",
+                         "canonicalSha256":  "C155DEFC8010FFDB3F2A5F3574FCE4811DDC589B3D0BB2E153E431052DB8DC66",
+                         "bundleSha256":  "060336D884B6FCDB08B62EDD5F099D985AF6CAF57743A9412345206EDE97F934",
+                         "reason":  "The ladder now names `wait_agent`, `list_agents`, `send_message`, `swarm_child action: stop`, `interrupt_agent` and `job_kill`; a coordinator only ever stops workers it owns; there is no force variant here, so the force bullet is gone.",
+                         "surfaces":  [
+                                          "interrupt_agent",
+                                          "job_kill",
+                                          "job_output",
+                                          "list_agents",
+                                          "send_message",
+                                          "swarm_child",
+                                          "swarm_task",
+                                          "team_task_list",
+                                          "wait_agent"
+                                      ]
+                     },
+                     {
+                         "file":  "skills/swarm-engineering/swarm-engineering.md",
+                         "heading":  "12. Requirement Matching",
+                         "canonicalSha256":  "8FE53788F9E4D080C056D932A28BA8DAD0682F02BF2F144D45161B6D99B411FF",
+                         "bundleSha256":  "FAF877D0CD06077CAA53DCF62C58275263EA6D16301F4620C358681F3888E963",
+                         "reason":  "The requirement comes from the shared board - `team_task_get` returns the task the worker takes and its `description` carries the requirement block - and the durable copy under `.swarm/requirements/` wins a disagreement.",
+                         "surfaces":  [
+                                          "team_task_get"
+                                      ]
+                     },
+                     {
+                         "file":  "skills/swarm-engineering/swarm-engineering.md",
+                         "heading":  "13. Requirement Handover",
+                         "canonicalSha256":  "6C4992F83B8F54E559993F323AF595BD6209EFD055198E8276339B1834241C62",
+                         "bundleSha256":  "C70287544642BD62AD27634B985D4165B27FA3C0230E0A7419AAC11C8BDC26C2",
+                         "reason":  "The carrier is the shared board: `team_task_create` returns a task id, the task description holds the requirement block, the worker cites `\u003ctask id\u003e`, a requirement whose task cannot be read is `not demonstrated`, and a lane that is not a team member reads the board read-only with `swarm_task`.",
+                         "surfaces":  [
+                                          "swarm_task",
+                                          "team_task_create",
+                                          "team_task_update"
+                                      ]
+                     },
+                     {
+                         "file":  "skills/swarm-engineering/swarm-engineering.md",
+                         "heading":  "14. The Verification Paths This Host Offers",
+                         "canonicalSha256":  "6C518896D3A03BBAC09B66AF8F041BF1ECA8379A99273C4A73620694D6843489",
+                         "bundleSha256":  "7768556AC4F87FB25F9BC38EB78971BEBDF0132BC42353F8284370C70994C56B",
+                         "reason":  "The heading changed: the canonical\u0027s `14. Native Verification Surfaces` became `14. The Verification Paths This Host Offers`, because the section no longer describes surfaces this host does not have. No native review or judge command exists here and no tool exposes one, so the section says so and gives the two paths this host supports: review the change in your own tree, or spend a worker. One independent verification run at acceptance.",
+                         "surfaces":  [
+
+                                      ],
+                         "canonicalHeading":  "14. Native Verification Surfaces"
+                     },
+                     {
+                         "file":  "skills/swarm-engineering/swarm-engineering.md",
+                         "heading":  "14.1 No End-of-Turn Trigger Exists on This Host",
+                         "canonicalSha256":  "1049F8460240AD6BDF80CEF9423F6545C0B98C917CBA160BE915123B14644737",
+                         "bundleSha256":  "AC3D6FF5C127065A226B5465ED83C68B40EAEBFD53035F23371470F4912DD763",
+                         "reason":  "The heading changed: the canonical\u0027s `14.1 The end-of-turn trigger is mode-dependent` became `14.1 No End-of-Turn Trigger Exists on This Host`. No end-of-turn trigger exists here in any mode: the headless, worker and background-job cases are stated, and both verification paths substitute for a Reviewer worker.",
+                         "surfaces":  [
+
+                                      ],
+                         "canonicalHeading":  "14.1 The end-of-turn trigger is mode-dependent"
+                     }
+                 ]
+}

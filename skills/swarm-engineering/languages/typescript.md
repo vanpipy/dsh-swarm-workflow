@@ -13,9 +13,10 @@ reports — and `../shared.md` owns the **shared pieces** that hold in every
 language. This file owns the **idioms**: the TypeScript rules that are not
 generic, the version floors they carry, and the traps this language has shipped.
 
-Read the piece that matches what you are changing, before you change it: "read
-§6 of the TypeScript craft before you touch the error handling". Everything here
-is checkable — a rule that cannot be checked is advice, not guidance.
+Read the piece that matches what you are changing, before you change it. A
+brief names the piece: "read §6 of the TypeScript craft before you touch the
+error handling". Everything here is checkable — if a rule cannot be checked,
+treat it as advice rather than guidance.
 
 Two facts shape the rest: TypeScript types are **erased** at runtime, so a typed
 API still has to validate what comes in; and the type system is **structural**,

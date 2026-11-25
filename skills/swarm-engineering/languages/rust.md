@@ -11,9 +11,12 @@ whenToUse: Read in any lane that changes Rust code, before it changes it.
 The `swarm-engineering` skill owns the **process** — what a lane does, what it
 reports — and `../shared.md` owns the **shared pieces** that hold in every
 language. This file owns the **idioms**: the Rust rules that are not generic,
-the version floors they carry, and the traps this language has shipped. Read
-the piece that matches what you are changing, before you change it. Everything
-here is checkable: a rule you cannot check is advice, not guidance.
+the version floors they carry, and the traps this language has shipped.
+
+Read the piece that matches what you are changing, before you change it. A
+brief names the piece: "read §6 of the Rust craft before you touch the error
+handling". Everything here is checkable: a rule you cannot check is advice, not
+guidance.
 
 ## 1. The surface: layout, packaging, the version floor
 

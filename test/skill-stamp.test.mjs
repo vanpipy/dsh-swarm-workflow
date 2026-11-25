@@ -42,6 +42,7 @@ const CRAFT = [
 ]
 
 let failures = 0
+let checks = 0
 
 /**
  * Compare one value with what the suite expects.
@@ -51,6 +52,7 @@ let failures = 0
  * @returns {void}
  */
 function check(label, actual, expected) {
+  checks += 1
   const ok = JSON.stringify(actual) === JSON.stringify(expected)
   if (!ok) failures += 1
   console.log(`${ok ? 'PASS' : 'FAIL'} ${label} -> ${JSON.stringify(actual)}${ok ? '' : ` (expected ${JSON.stringify(expected)})`}`)
@@ -69,6 +71,7 @@ function checkResult(label, compute, expected) {
   try {
     actual = compute()
   } catch (error) {
+    checks += 1
     failures += 1
     console.log(`FAIL ${label} -> threw: ${error.message}`)
     return
@@ -238,5 +241,6 @@ try {
   rmSync(sandbox, { recursive: true, force: true })
 }
 
+console.log(`SUITE CHECKS: ${checks}`)
 console.log(failures === 0 ? 'ALL CHECKS PASSED' : `${failures} CHECK(S) FAILED`)
 process.exitCode = failures === 0 ? 0 : 1

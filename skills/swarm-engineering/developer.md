@@ -136,6 +136,7 @@ says what the Developer does with them.
 * The shared pieces apply on top of the language file. The language file
   carries the idiom; the shared file carries the rule behind it.
 * A language that deserves its own file gets one, under `languages/`: the same
-  twelve pieces, in that language's own idioms.
+  ground, in that language's own idioms, under that file's own numbered
+  sections. The shared file's twelve pieces stay the shared rules behind them.
 * Where the repository's conventions disagree with the language file, the
   repository wins. Say in the report that they did.

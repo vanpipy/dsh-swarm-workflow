@@ -1,8 +1,10 @@
 <!--
 This file is the boundary. Everything else in this bundle is the user's own
-words; everything in this file is written for the host this plugin runs on.
-The plugin prepends the parts of this file that match the audience it is
-assembling a prompt for, and it never rewrites the shipped text.
+words, adapted to the host this plugin runs on; everything in this file is
+written for that host. The plugin prepends the parts of this file that match the
+audience it is assembling a prompt for, and it never rewrites the shipped text
+at composition time. The adapted passages are recorded in
+docs/host-adaptation.md.
 -->
 
 <!-- swarm:note coordinator worker skill -->
@@ -12,13 +14,15 @@ This file is the host note: the plugin's own prose about this runtime. The
 global execution policy (`prompt-overlay.md`), the delegation briefing
 (`swarm-prompt.md`) and the role methods
 (`skills/swarm-engineering/swarm-engineering.md`) are the user's own text,
-shipped byte for byte; the plugin only reads them and composes a view of them.
+adapted to this host's surfaces and carriers; the plugin only reads them and
+composes a view of them.
 
-Everything that depends on the runtime lives here. Where the shipped text
-names a Jcode surface, the surface that replaces it on this host is named
-below; where a Jcode surface has no counterpart here, the rule it carried
-still holds and the substitute is named. Everywhere else the shipped text
-stays authoritative.
+Everything that depends on the runtime lives here. The shipped text names the
+surfaces of the host it ships on, so the adaptation to this host is already in
+it; the surface map below records what that adaptation replaced, and
+`docs/host-adaptation.md` records every adapted passage. Where a Jcode surface
+has no counterpart here, the rule it carried still holds and the substitute is
+named. Everywhere else the shipped text stays authoritative.
 
 <!-- swarm:note coordinator worker skill -->
 ## Host identity
@@ -34,30 +38,40 @@ governs delegated work as well as direct work. Section 12, Swarm
 Orchestration, is the Coordinator's operating manual and stays with the
 Coordinator.
 
-`swarm-prompt.md` is the reference runtime's `swarm` tool description. This
-host has no `swarm` tool. The file is the Coordinator's delegation briefing:
-the parts about what to delegate, what a brief must carry and where a
-requirement lives apply as written, and the parts about the tool call itself,
-its `model` parameter and `swarm list_models` describe a surface that does not
-exist here.
+`swarm-prompt.md` was the reference runtime's `swarm` tool description. This
+host has no `swarm` tool. The file is the Coordinator's delegation briefing,
+adapted to this host: it names the delegation surfaces this host has, the lane
+mechanics, the fields a brief must carry, and the Coordinator's own bounds.
+
+The root agent is the Coordinator. The host calls that same agent the Team Lead
+in its own tool descriptions, so the two names are one role: the agent that owns
+the team and the delegation.
 
 <!-- swarm:note coordinator skill -->
 ## Surface map: Jcode to DeepSeek Harness
 
-The table says how a Jcode surface translates on this host. It is not a list of
-what this session has: the live capability block at the end of the prompt says
-which of these surfaces are registered right now, and a surface that is absent
-there must not be planned around.
+The table records how the Jcode surfaces of the canonical text translate on this
+host. The shipped text now names the right-hand column directly, so this table
+is the record of the change rather than a translation the reader has to apply.
+It is not a list of what this session has: the live capability block at the end
+of the prompt says which of these surfaces are registered right now, and a
+surface that is absent there must not be planned around.
 
-| The shipped text names | On this host |
+| The canonical text named | On this host |
 | --- | --- |
-| the `swarm` tool, its `spawn` and `launch` actions | `subagent` (a worker with its own context), `subagent_fork` (a worker that inherits this conversation), `workflow` (a scripted fan-out over many independent workers), `spawn_teammate` (a durable native teammate, and only the Team Lead may call it) |
+| the `swarm` tool, its `spawn` and `launch` actions | `subagent` (a worker with its own context), `subagent_fork` (a worker that inherits this conversation), `workflow` (a scripted fan-out over many independent workers), `spawn_teammate` (a durable native teammate, and only the Coordinator may call it) |
 | the lane `label` | the `description` of the `subagent` or `spawn_teammate` call |
 | the lane `phase` | the round you are on: one row in `todo_write` per round |
-| `model`, `agents.swarm_model`, `swarm list_models`, `[agents] swarm_effort` | `subagent` takes `provider` and `model`, and `reasoning_effort`; `list_subagent_models` lists the providers and models this host can use; omitted values fall back to the child default. There is no session-wide swarm model setting and no `swarm list_models` command here. |
+| `model`, `agents.swarm_model`, `[agents] swarm_model`, `swarm list_models`, `[agents] swarm_effort` | `subagent` takes `provider` and `model`, and `reasoning_effort`; `list_subagent_models` lists the providers and models this host can use; omitted values fall back to the child default. There is no session-wide swarm model setting and no `swarm list_models` command here. |
 | `swarm await_members` | the host notifies you when a child finishes; `wait_agent` waits for the next teammate status, message or task change; `job_output` with `wait: true` collects a background job. Never poll with sleeps — that rule is unchanged. |
+| `swarm list` | `list_agents` lists the durable teammates and their availability; `swarm_child` with `action: list` lists your own child lanes; `team_task_list`, or `swarm_task` with `action: list`, reads the shared board. The rule it carried — watch a lane instead of only waiting for it — holds unchanged. |
+| `swarm message` | `send_message` addresses a native teammate by name and steers a running target at its nearest step boundary; `swarm_child` with `action: steer` addresses a child lane by its id. A successful send does not mean the recipient has processed it, so the rule against repeating a message that was ignored still holds. |
+| `swarm stop` | `swarm_child` with `action: stop` stops a child lane; `interrupt_agent` interrupts a native teammate's turn and keeps its inbox. There is no force variant here, so the rule that force is reserved for a session this coordinator did not spawn has no counterpart: nothing on this host needs it. Stopping loses the unwritten remainder either way. |
+| `swarm summary` | no counterpart here. `job_output` reads a background job's output and a native teammate's transcript lives on disk; neither reports a lane's recent tool calls directly. |
+| no counterpart in the canonical text | `job_kill` — requests the cancellation of a running background job: it takes the job id and an optional reason, and the reason is recorded in the log and forwarded to the job. |
 | `[agents] swarm_stall_after_secs`, `[agents] swarm_stall_nudge` | no such setting here. `wait_agent` with a timeout, then `interrupt_agent` or `swarm_child` with `stop`, is the stall path. |
-| `/autoreview`, `/autojudge`, `/review`, `/judge` | no such command exists here and no tool exposes one to a model. See "Independent verification on this host" below. |
+| `/autoreview`, `/autojudge`, `/review`, `/judge`, `[autoreview] enabled`, `[autojudge] enabled` | no such command exists here and no tool exposes one to a model; the session flags have no counterpart either, so a flag that reads "enabled" can never mean a review ran. See "Independent verification on this host" below. |
+| the Jcode CLI (`jcode run`, `jcode ambient run-visible`) | no counterpart here: this host is DeepSeek Harness, and the bundle ships no headless-run command of its own. The sentences that name these describe another runtime's turn path — there is nothing for a lane to run, and no local turn path for an end-of-turn trigger to fire on. |
 | the todo lane, its `details` field, the requirement id | the shared board: `team_task_create` returns a task id and the task `description` carries the requirement block. See "Requirement handover on this host" below. |
 | the server-level swarm plan | the shared board plus the `todo_write` ledger. This host has no separate plan object. |
 | `~/.jcode/swarm-prompt.md`, `./.jcode/swarm-prompt.md`, `config.toml` | no such path exists here. This bundle's markdown files are the shipped text, and the host's own settings live in the DSH profile. |
@@ -208,10 +222,13 @@ The surfaces this host offers, and the Jcode surface each one replaces:
 - `wait_agent`, `list_agents`, `send_message`, `interrupt_agent` — the native team. Two `send_message` families share the name: yours addresses a native teammate by name, while a delegated worker's addresses a continuable child by its agent id. <!-- swarm:requires wait_agent -->
 - `swarm_task` — the shared board in one call: read it, claim it, move it. <!-- swarm:requires swarm_task -->
 - `swarm_child` — your own child lanes: list, steer, stop. <!-- swarm:requires swarm_child -->
+- `job_output` — reads a background job: the output since the previous read for a stream job, or the result of a finished final-output job. <!-- swarm:requires job_output -->
+- `job_kill` — requests the cancellation of a running background job: it takes the job id and an optional reason, and the reason is recorded in the log and forwarded to the job. No Jcode surface maps to it. <!-- swarm:requires job_kill -->
+- `job_list` — lists the background jobs this session started, with their ids, their kinds and their statuses. <!-- swarm:requires job_list -->
 - `swarm_worktree` — a retained Git worktree, so a lane gets files of its own instead of editing a shared tree. <!-- swarm:requires swarm_worktree -->
 - `ask_user_question` — put an open product decision in front of the human before you delegate it. <!-- swarm:requires ask_user_question -->
 - `.swarm/` in the workspace of the work item — where the requirement set, the decisions and the lane reports are written. Write the requirement file before you dispatch the first lane.
-- The craft guidance every lane works by, registered as a skill so a brief can name it: `swarm-craft-shared`, `swarm-craft-developer`, `swarm-craft-tester`, `swarm-craft-reviewer` and `swarm-craft-python` — the files behind them are `{{swarm:shared}}`, `{{swarm:developer}}`, `{{swarm:tester}}`, `{{swarm:reviewer}}` and `{{swarm:python}}`.
+- The craft guidance every lane works by, registered as a skill so a brief can name it: `swarm-craft-shared`, `swarm-craft-developer`, `swarm-craft-tester`, `swarm-craft-reviewer`, and one skill per language — `swarm-craft-python`, `swarm-craft-java`, `swarm-craft-go`, `swarm-craft-typescript` and `swarm-craft-rust` — the files behind them are `{{swarm:shared}}`, `{{swarm:developer}}`, `{{swarm:tester}}`, `{{swarm:reviewer}}`, `{{swarm:python}}`, `{{swarm:java}}`, `{{swarm:go}}`, `{{swarm:typescript}}` and `{{swarm:rust}}`. The language piece a brief names is the one for the language in play.
 
 The acceptance decision is yours. A worker's report is evidence, not
 acceptance: inspect the integrated change yourself, and confirm the original
@@ -225,7 +242,7 @@ task on the shared board; it is the only thing you act on.
 
 - The `swarm-engineering` skill is registered for you. Load it before non-trivial work: it carries the role method for your role, the assignment and reporting contract, requirement matching and requirement handover. <!-- swarm:requires skill -->
 - The sections of that skill a lane cannot infer from the assignment alone are quoted verbatim below, so you have them even if you never load the skill.
-- The craft guidance your role works by: load `swarm-craft-shared`, the skill named after your role — `swarm-craft-developer`, `swarm-craft-tester` or `swarm-craft-reviewer` — and `swarm-craft-python` for the language in play. The files behind them are `{{swarm:shared}}`, `{{swarm:developer}}`, `{{swarm:tester}}`, `{{swarm:reviewer}}` and `{{swarm:python}}`. Read the piece that matches what you are changing before you change it, and apply it while you work, not afterwards.
+- The craft guidance your role works by: load `swarm-craft-shared`, the skill named after your role — `swarm-craft-developer`, `swarm-craft-tester` or `swarm-craft-reviewer` — and the skill for the language in play — `swarm-craft-python`, `swarm-craft-java`, `swarm-craft-go`, `swarm-craft-typescript` or `swarm-craft-rust`. The files behind them are `{{swarm:shared}}`, `{{swarm:developer}}`, `{{swarm:tester}}`, `{{swarm:reviewer}}`, `{{swarm:python}}`, `{{swarm:java}}`, `{{swarm:go}}`, `{{swarm:typescript}}` and `{{swarm:rust}}`. Read the piece that matches what you are changing before you change it, and apply it while you work, not afterwards.
 - The shared board holds your assignment. Read it with `swarm_task`, or with `team_task_get` when you are a native teammate; a lane that is not a team member reads it read-only and reports what it read. <!-- swarm:requires swarm_task -->
 - `swarm_worktree` gives you a tree of your own instead of a shared one. <!-- swarm:requires swarm_worktree -->
 - `swarm_child` reaches your own child lanes, if you ever have any. <!-- swarm:requires swarm_child -->
@@ -234,18 +251,20 @@ task on the shared board; it is the only thing you act on.
 <!-- swarm:note skill -->
 ## The skill on this host
 
-This Skill is the user's own text, shipped verbatim; nothing in it was
-rewritten for this host.
+This Skill is the user's own text, adapted to this host: where the canonical
+text named a Jcode surface or a Jcode carrier, it names this host's. Every
+adapted section is listed in `docs/host-adaptation.md`.
 
 <!-- swarm:note worker skill -->
 ## The names in the skill that are runtime names
 
-Two names in it are runtime names rather than method names. "Jcode" means this
-host wherever it appears. A "todo" that carries a requirement in its `details`
-field means a task on the shared board, whose `description` carries the
-requirement block: the rule of section 13 holds and its carrier changed. The
-sentence "Jcode has no separate requirements file" is a fact about Jcode, not
-a rule: on this host the requirement set does have a file, under the
-workspace's `.swarm/requirements/`, and it carries the same block the task
-does. Where the text names a Jcode command or a Jcode setting, the surface
-that replaces it on this host is named in the runtime note above.
+The skill names this host's surfaces, so a name in it that reads as a runtime
+name means this host. A requirement is carried by a task on the shared board,
+whose `description` holds the requirement block, and by the durable copy under
+the workspace's `.swarm/requirements/`: the rule of section 13 holds and its
+carrier is named. Where the canonical text named a Jcode command or a Jcode
+setting, the adapted skill names the surface that replaces it on this host,
+and says so where there is no counterpart. The map that records every
+replacement is in the note the Coordinator carries. The worker's scope carries
+no map because the adapted skill names this host's surfaces directly: nothing
+in it is a Jcode command a worker could be told to run.

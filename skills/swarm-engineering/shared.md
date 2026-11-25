@@ -25,8 +25,10 @@ to work with.
 The language-specific pieces live under `languages/`, so that a language can
 grow without this file growing with it. The language files that ship with this
 bundle are `languages/python.md`, `languages/java.md`, `languages/go.md`,
-`languages/typescript.md` and `languages/rust.md`; each one carries the same
-nineteen sections in that language's own idioms. A brief names the file and the piece:
+`languages/typescript.md` and `languages/rust.md`; each one carries its own
+nineteen numbered sections — that language's reading of the same ground, in
+its own idioms — while the twelve pieces in §3 stay the shared rules behind
+them. A brief names the file and the piece:
 "read §3 of the tester's craft before you write the check". A brief that names
 a role and no piece leaves the lane guessing what good looks like.
 
@@ -240,9 +242,11 @@ Python's, and the language file for the language in play has the rest.
 
 ## 4. The same piece in another stack
 
-The craft is the same in every language; the idiom is not. When the repository
-is not Python, these are the pieces to read. A language that deserves its own
-file gets one, under `languages/`.
+The craft is the same in every language; the idiom is not. The pieces for the
+language in play live in that language's own file under `languages/` — read the
+one that matches the repository you are working in. A language that deserves
+its own file gets one, under `languages/`. The paragraphs below carry the same
+ground in brief, for the stacks they name.
 
 **TypeScript and JavaScript.** `strict` on, and no escape hatch without a
 reason. `unknown` at a boundary, narrowed immediately; `any` is a hole. `===`,

@@ -2,9 +2,11 @@
 //
 // The bundle ships three files that belong to the user: prompt-overlay.md
 // (the global execution policy), swarm-prompt.md (the delegation briefing) and
-// skills/swarm-engineering/swarm-engineering.md (the role methods). They are shipped byte for
-// byte, and every host-specific fact lives in runtime-note.md, the one file
-// the plugin wrote.
+// skills/swarm-engineering/swarm-engineering.md (the role methods). They are
+// the user's own text, adapted to this host's surfaces and carriers: every
+// adapted passage is recorded in docs/host-adaptation.md and guarded by the
+// cross-repo checker. The host facts live in runtime-note.md, the one file the
+// plugin wrote.
 //
 // This suite holds that boundary. It fails when
 //   - a plugin marker (`<!-- swarm:... -->`) or a gating fragment
@@ -47,12 +49,14 @@ const skill = read(SKILL)
 const texts = { [NOTE]: note, [OVERLAY]: overlay, [BRIEF]: brief, [SKILL]: skill }
 
 let failures = 0
+let checks = 0
 /**
  * Record one check.
  * @param {string} label - what the check proves.
  * @param {boolean} ok - whether the check holds.
  */
 const check = (label, ok) => {
+  checks += 1
   if (!ok) { failures += 1; console.log(`FAIL  ${label}`) } else { console.log(`ok    ${label}`) }
 }
 
@@ -80,13 +84,51 @@ check(`${NOTE}: it carries scope blocks`, /<!--\s*swarm:note\s/i.test(note))
 // --- 4. The shipped files still carry the user's own anchors ----------------
 check(`${OVERLAY}: keeps the orchestration section`, overlay.includes('## 12. Swarm Orchestration'))
 check(`${OVERLAY}: keeps the policy boundaries section`, overlay.includes('## 11. Policy and Tool Boundaries'))
-check(`${BRIEF}: keeps the requirement rule`, brief.includes('Requirements belong to a todo lane'))
+check(`${BRIEF}: keeps the requirement rule`, brief.includes('Requirements belong to a task on the shared board'))
 check(`${BRIEF}: keeps the brief contract`, brief.includes('What every brief must carry'))
 check(`${SKILL}: keeps the requirement handover section`, skill.includes('## 13. Requirement Handover'))
 check(`${SKILL}: keeps the requirement matching section`, skill.includes('## 12. Requirement Matching'))
 check(`${SKILL}: keeps the assignment contract section`, skill.includes('## 8. Assignment and Reporting Contract'))
 check(`${SKILL}: keeps the handover citation rule`, skill.includes('A worker cites the requirement as'))
-check(`${SKILL}: keeps the handover carrier rule`, skill.includes('Jcode has no separate requirements file'))
+check(`${SKILL}: keeps the handover carrier rule`, skill.includes('.swarm/requirements/<work-item>.md'))
+
+// The anchors the canonical text gained in its last re-sync: the decidable
+// sufficiency mechanism, the bounded read and verification phases, and the
+// ladder that stops a lane that overran its brief. The bundle ships that text
+// byte for byte, so these headings are anchors like the ones above: a re-sync
+// that dropped them would still be a bundle shipping the older text.
+const NEW_ANCHORS = [
+  [OVERLAY, /#### 2\.2\.1 Evidence Thresholds/, 'keeps the evidence thresholds'],
+  [OVERLAY, /#### 2\.2\.2 Tool-Call Budgets/, 'keeps the tool-call budgets'],
+  [OVERLAY, /#### 2\.2\.3 The End Event Binds the Next Action/, 'keeps the end event'],
+  [OVERLAY, /#### 2\.2\.4 Bounding the Read Phase of a Direct Task/, 'keeps the bounded read phase'],
+  [OVERLAY, /#### 2\.2\.5 Bounding the Verification Phase/, 'keeps the bounded verification phase'],
+  [OVERLAY, /### 12\.8 Enforcing a Lane.s Bound/, 'keeps the lane-bound ladder'],
+  [SKILL, /#### 2\.3\.1 Evidence Thresholds/, 'keeps the evidence thresholds'],
+  [SKILL, /#### 2\.3\.2 Tool-Call Budgets/, 'keeps the tool-call budgets'],
+  [SKILL, /#### 2\.3\.3 The End Event Binds the Next Action/, 'keeps the end event'],
+  [SKILL, /#### 2\.3\.4 No Third Read of the Same Path/, 'keeps the no-third-read rule'],
+  [SKILL, /#### 2\.3\.5 Bounding the Verification Phase/, 'keeps the bounded verification phase'],
+  [SKILL, /### 11\.1 Stopping a Lane That Overran Its Brief/, 'keeps the overrun ladder'],
+  [BRIEF, /A brief without a target list, an evidence budget, or a stop condition is not/, 'keeps the three new brief fields'],
+]
+for (const [name, anchor, what] of NEW_ANCHORS) {
+  check(`${name}: ${what}`, anchor.test(texts[name]))
+}
+
+// The two headings under §14 are adapted titles. The canonical text named a
+// native review surface and a mode-dependent end-of-turn trigger, neither of
+// which this host has; the bodies of both sections say so. The adaptation is
+// recorded in docs/host-adaptation.md, and pinning the adapted titles here
+// makes a revert to the canonical titles fail this suite instead of passing
+// silently.
+const ADAPTED_SKILL_HEADINGS = [
+  [/^## 14\. The Verification Paths This Host Offers$/m, 'keeps the adapted §14 heading'],
+  [/^### 14\.1 No End-of-Turn Trigger Exists on This Host$/m, 'keeps the adapted §14.1 heading'],
+]
+for (const [anchor, what] of ADAPTED_SKILL_HEADINGS) {
+  check(`${SKILL}: ${what}`, anchor.test(skill))
+}
 
 // --- 5. The skill still starts with its frontmatter -------------------------
 {
@@ -97,5 +139,30 @@ check(`${SKILL}: keeps the handover carrier rule`, skill.includes('Jcode has no 
   check(`${SKILL}: the frontmatter carries a description`, /^description:\s*\S/m.test(fields))
 }
 
+// --- 6. The shipped policy names no Jcode surface ----------------------------
+// The canonical text names the `swarm` tool, the settings around it and the
+// Jcode CLI. The adapted text names this host's surfaces instead, so a Jcode
+// token left in the shipped policy is a passage that was never adapted. The
+// host note may name them: the note is where the map of every replacement
+// lives.
+const JCODE_TOKENS = [
+  /\bJcode\b/,
+  /\bjcode\b/,
+  /`swarm (?:await_members|list_models|list|message|stop|summary|spawn|launch)`/,
+  /\/(?:auto)?(?:review|judge)\b/,
+  /`\[agents\]/,
+  /~?\/\.jcode\//,
+  /scratch\//,
+  /\btodo lane\b/,
+  /`details`/,
+  /\broot session\b/,
+  /\bforce\b/,
+]
+for (const name of USER_FILES) {
+  const hit = JCODE_TOKENS.find((pattern) => pattern.test(texts[name]))
+  check(`${name}: names no Jcode surface`, hit === undefined)
+}
+
+console.log(`SUITE CHECKS: ${checks}`)
 console.log(failures === 0 ? 'ALL CHECKS PASSED' : `${failures} CHECK(S) FAILED`)
 process.exit(failures === 0 ? 0 : 1)

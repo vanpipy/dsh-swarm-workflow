@@ -100,7 +100,7 @@ reject it, and no Go toolchain exists here to fix it and prove the fix.
 
 ## audit-rounds and provenance — the earlier audit of this bundle's own text
 
-Before the two test phases, this bundle's shipped text was audited against the
+Before the test phases, this bundle's shipped text was audited against the
 host it runs on: the wording of the policy, the claims about the runtime, the
 citations inside the skill, and the code pointers in the runtime note. Those
 rounds left their documents behind, and they are kept here because they are the
@@ -111,7 +111,7 @@ reason several phrases in the shipped files read the way they do.
 | `audit-rounds/*.md` | the round documents: the audits (`AUDIT.md`, `AUDIT-CODE.md`, `AUDIT-TEXT.md`, `AUDIT-REVIEW.md`), the design set (`DESIGN-*`), the test-round set (`HT-*`, `HT2-*`), the verdicts (`FINAL-VERDICT.md`, `FINAL-REVIEW-2026-11-10.md`, `HT2-VERDICT.md`, `REVIEW-verdict.md`), the findings and fixes, the rename and install notes, and the team protocol |
 | `audit-rounds/briefs/*.md` | the briefs the audit lanes were given |
 | `audit-rounds/tools/` | the checkers those rounds used: citation and pointer checks, the mutation scripts, the probes, and the round's own test copies |
-| `provenance/user-skill-paste.md` | the user's original paste of the role-methods text — the source of `skills/swarm-engineering/swarm-engineering.md`, which is shipped byte for byte |
+| `provenance/user-skill-paste.md` | the user's original paste of the role-methods text — the source of `skills/swarm-engineering/swarm-engineering.md`, which is carried from it and adapted to this host only where the record in `../host-adaptation.md` says so |
 
 ---
 

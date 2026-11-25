@@ -45,7 +45,7 @@ const ALL = [
   'subagent', 'subagent_fork', 'workflow', 'spawn_teammate', 'send_message', 'interrupt_agent',
   'list_agents', 'wait_agent', 'team_task_create', 'team_task_get', 'team_task_list',
   'team_task_update', 'create_goal', 'get_goal', 'update_goal', 'todo_write',
-  'ask_user_question', 'schedule_create', 'skill',
+  'ask_user_question', 'schedule_create', 'job_output', 'job_kill', 'job_list', 'skill',
   // The plugin registers these three itself, so a live host has them in the
   // registry the moment the bundle is applied.
   'swarm_worktree', 'swarm_task', 'swarm_child',
@@ -54,12 +54,14 @@ const ALL = [
 const MINIMAL = ['subagent', 'todo_write']
 
 let failures = 0
+let checks = 0
 /**
  * Record one check. A missing export is a failure of this suite, not a crash.
  * @param {string} label - what the check proves.
  * @param {Function} fn - returns true when the check holds.
  */
 const check = (label, fn) => {
+  checks += 1
   let ok
   try {
     ok = fn() === true
@@ -167,50 +169,244 @@ const craftPathLines = (text, name) => text.split(/\r?\n/).filter((line) => {
   return trimmed.endsWith(name) && /(?<![^\s`'"])(?:[A-Za-z]:[\\/]|\/)[^\s`'"]*$/.test(trimmed)
 })
 
+// --- The sections a composed view is made of --------------------------------
+// A view is a composition of files, and the only way to know whether it still
+// carries them is to compare it with the files it is composed from. The
+// expectation is derived from those files — the note's blocks for an
+// audience, the policy, the brief, the skill sections the bundle names — so a
+// view that loses a section of any of them fails here.
+//
+// Pinning endpoints does not: a policy truncated to its last two sections
+// still has both of the old endpoints, so the old checks passed. The shape of
+// the policy is therefore read from the runtime note, which states how many
+// sections a worker gets and which section stays with the Coordinator, and the
+// bundle's cut is checked against that statement.
+
+/**
+ * The headings of a text, in the order they appear.
+ * @param {string} text - the text to read.
+ * @returns {string[]} the heading titles.
+ */
+const headings = (text) => text
+  .split(/\r?\n/)
+  .map((line) => /^#{1,6}\s+(.+?)\s*$/u.exec(line))
+  .filter((match) => match !== null)
+  .map((match) => match[1])
+
+/**
+ * The headings of the note blocks written for one audience.
+ * @param {string} scope - the audience, `coordinator` or `worker`.
+ * @returns {string[]} the heading titles of those blocks.
+ */
+const noteHeadings = (scope) => bundle.parseRuntimeNote(note)
+  .filter((block) => block.scopes.includes(scope))
+  .flatMap((block) => headings(block.text))
+
+/**
+ * The number a section title starts with.
+ * @param {string} title - a heading title.
+ * @returns {number|null} the leading number, or null when the title has none.
+ */
+const sectionNumber = (title) => {
+  const match = /^(\d+(?:\.\d+)*)/u.exec(title)
+  return match === null ? null : Number(match[1].split('.')[0])
+}
+
+/**
+ * The shape of the policy, as the runtime note states it.
+ * @returns {{worker: number[], coordinatorOnly: number, coordinatorOnlyTitle: string}} the shape.
+ */
+const policyShape = () => {
+  // The note wraps its sentences, so the statements are read from a copy whose
+  // line breaks are spaces.
+  const prose = note.replace(/\s+/gu, ' ')
+  const range = /sections\s+(\d+)\s+to\s+(\d+)\s+into every worker/u.exec(prose)
+  if (range === null) throw new Error('the runtime note no longer states which sections of the policy a worker gets')
+  const only = /Section\s+(\d+),\s*([^,]+?),\s+is the Coordinator's operating manual/u.exec(prose)
+  if (only === null) throw new Error('the runtime note no longer states which section of the policy stays with the Coordinator')
+  const worker = []
+  for (let number = Number(range[1]); number <= Number(range[2]); number += 1) worker.push(number)
+  return {
+    worker,
+    coordinatorOnly: Number(only[1]),
+    coordinatorOnlyTitle: only[2].trim().replace(/\*+$/u, ''),
+  }
+}
+
+/**
+ * The heading the policy ends with for a worker.
+ * @returns {string} the heading title.
+ */
+const workerPolicyEnd = () => {
+  const shape = policyShape()
+  const last = shape.worker[shape.worker.length - 1]
+  const title = headings(overlay).find((heading) => sectionNumber(heading) === last)
+  if (title === undefined) throw new Error(`the policy has no section ${last}`)
+  return title
+}
+
+/**
+ * The headings of the policy a worker gets: the policy up to the bundle's cut.
+ * @returns {string[]} the heading titles.
+ */
+const workerPolicyHeadings = () => {
+  const cut = sectionNumber(bundle.WORKER_OVERLAY_CUT)
+  const kept = []
+  for (const title of headings(overlay)) {
+    const number = sectionNumber(title)
+    if (number !== null && number >= cut) break
+    kept.push(title)
+  }
+  return kept
+}
+
+/**
+ * Where a heading sits in a text.
+ * @param {string} text - the text to read.
+ * @param {string} title - the heading title.
+ * @returns {number} the offset of the heading, or -1 when it is not there.
+ */
+const headingAt = (text, title) => {
+  const lines = text.split(/\r?\n/)
+  const index = lines.findIndex((line) => {
+    const match = /^#{1,6}\s+(.+?)\s*$/u.exec(line)
+    return match !== null && match[1] === title
+  })
+  if (index === -1) return -1
+  return lines.slice(0, index).join('\n').length
+}
+
+/**
+ * The first line of the brief that carries its text.
+ * @returns {string} the line.
+ */
+const briefAnchor = () => {
+  const lines = brief.split(/\r?\n/)
+  let inComment = false
+  for (const line of lines) {
+    if (line.startsWith('<!--')) { inComment = true; continue }
+    if (inComment) { if (line.includes('-->')) inComment = false; continue }
+    if (line.trim() === '') continue
+    return line
+  }
+  throw new Error('the brief carries no text')
+}
+
+/**
+ * The policy sections a view carries.
+ *
+ * The sections of the policy are the headings the view shares with the
+ * policy file; the skill sections a worker also gets carry other numbers.
+ * @param {string} view - the composed prompt.
+ * @returns {number[]} the section numbers, in the order they appear.
+ */
+const policySectionsIn = (view) => {
+  const titles = new Set(headings(overlay))
+  return headings(view)
+    .filter((title) => titles.has(title))
+    .map(sectionNumber)
+    .filter((number) => number !== null)
+}
+
+/**
+ * Compare the sections of a composed view with the sections it is composed from.
+ * @param {string} view - the composed prompt.
+ * @param {Set<string>} expected - the sections the source files carry.
+ * @returns {string} the difference, empty when the view carries exactly them.
+ */
+const sectionDiff = (view, expected) => {
+  const actual = new Set(headings(view))
+  const missing = [...expected].filter((title) => !actual.has(title))
+  const extra = [...actual].filter((title) => !expected.has(title))
+  return [
+    ...missing.map((title) => `missing: ${title}`),
+    ...extra.map((title) => `unexpected: ${title}`),
+  ].join(' | ')
+}
+
+const CAPABILITY_HEADING = 'Host capabilities — probed live'
+
+const expectedCoordinatorSections = new Set([
+  ...noteHeadings('coordinator'),
+  ...headings(overlay),
+  ...headings(brief),
+  CAPABILITY_HEADING,
+])
+
+const expectedWorkerSections = new Set([
+  ...noteHeadings('worker'),
+  ...workerPolicyHeadings(),
+  ...bundle.WORKER_SKILL_SECTIONS.flatMap((title) => {
+    const section = call('extractSection', skill, title)
+    if (section === null) throw new Error(`the skill has no section "${title}"`)
+    return headings(section)
+  }),
+  CAPABILITY_HEADING,
+])
+
 // --- 1. The Coordinator view ------------------------------------------------
-check('coordinator: the host note is in it', () => coord.includes('## Host identity'))
-check('coordinator: the surface map is in it', () => coord.includes('## Surface map: Jcode to DeepSeek Harness'))
-check('coordinator: the requirement handover is in it', () => coord.includes('## Requirement handover on this host'))
-check('coordinator: the verification path is in it', () => coord.includes('## Independent verification on this host'))
-check('coordinator: the live capability section is in it', () => coord.includes('## Live capabilities of this session'))
-check('coordinator: the coordinator lane note is in it', () => coord.includes('## The Coordinator on this host'))
-check('coordinator: the whole policy is in it', () => coord.includes('## 11. Policy and Tool Boundaries'))
-check('coordinator: the orchestration section is in it', () => coord.includes('## 12. Swarm Orchestration'))
-check('coordinator: the whole brief is in it', () => coord.includes('Requirements belong to a todo lane'))
-check('coordinator: the capability block is in it', () => coord.includes('## Host capabilities — probed live'))
-check('coordinator: the worker lane note is not in it', () => !coord.includes('## The worker lane on this host'))
-check('coordinator: the skill lane note is not in it', () => !coord.includes('## The skill on this host'))
+check('coordinator: the view carries exactly the sections of the files it is composed from', () => {
+  const diff = sectionDiff(coord, expectedCoordinatorSections)
+  if (diff !== '') throw new Error(diff)
+  return true
+})
+check('coordinator: the policy in the view has every section the note says it has', () => {
+  const shape = policyShape()
+  const numbers = new Set(policySectionsIn(coord))
+  const missing = [...shape.worker, shape.coordinatorOnly].filter((number) => !numbers.has(number))
+  if (missing.length > 0) throw new Error(`the policy in the view is missing section ${missing.join(', ')}`)
+  return true
+})
+check('coordinator: the whole brief is in it', () => coord.includes('Requirements belong to a task on the shared board'))
 check('coordinator: the note comes first, then the policy, then the brief', () => {
-  const note = coord.indexOf('## Host identity')
-  const policy = coord.indexOf('## 11. Policy and Tool Boundaries')
-  const brief = coord.indexOf('Requirements belong to a todo lane')
-  return note < policy && policy < brief
+  const noteAt = headingAt(coord, noteHeadings('coordinator')[0])
+  const policyAt = headingAt(coord, workerPolicyEnd())
+  const briefAt = coord.indexOf(briefAnchor())
+  return noteAt >= 0 && policyAt > noteAt && briefAt > policyAt
 })
 
 // --- 2. The worker view -----------------------------------------------------
-check('worker: the worker lane note is in it', () => work.includes('## The worker lane on this host'))
-check('worker: the policy up to section 12 is in it', () => work.includes('## 11. Policy and Tool Boundaries'))
-check('worker: the assignment contract is in it', () => work.includes('## 8. Assignment and Reporting Contract'))
-check('worker: the requirement matching section is in it', () => work.includes('## 12. Requirement Matching'))
-check('worker: the requirement handover section is in it', () => work.includes('## 13. Requirement Handover'))
-check('worker: the orchestration section is not in it', () => !work.includes('## 12. Swarm Orchestration'))
-check('worker: the orchestration subsections are not in it', () => !work.includes('### 12.5 Assignment Brief'))
-check('worker: the coordinator lane note is not in it', () => !work.includes('## The Coordinator on this host'))
-check('worker: the surface map is not in it', () => !work.includes('## Surface map: Jcode to DeepSeek Harness'))
+check('worker: the view carries exactly the sections of the files it is composed from', () => {
+  const diff = sectionDiff(work, expectedWorkerSections)
+  if (diff !== '') throw new Error(diff)
+  return true
+})
+check('worker: the policy in the view has every section the note gives a worker', () => {
+  const shape = policyShape()
+  const numbers = new Set(policySectionsIn(work))
+  const missing = shape.worker.filter((number) => !numbers.has(number))
+  if (missing.length > 0) throw new Error(`the policy in the view is missing section ${missing.join(', ')}`)
+  return true
+})
+check('worker: the section that stays with the Coordinator is not in the view', () => {
+  const shape = policyShape()
+  if (headings(work).includes(shape.coordinatorOnlyTitle)) {
+    throw new Error(`section ${shape.coordinatorOnly} "${shape.coordinatorOnlyTitle}" belongs to the Coordinator`)
+  }
+  return true
+})
+check('worker: the bundle cuts the policy where the note says the Coordinator takes over', () => {
+  const shape = policyShape()
+  const cut = bundle.WORKER_OVERLAY_CUT
+  const number = sectionNumber(cut)
+  if (number !== shape.coordinatorOnly || !cut.endsWith(shape.coordinatorOnlyTitle)) {
+    throw new Error(`the bundle cuts the policy at "${cut}", the note gives the Coordinator section ${shape.coordinatorOnly} "${shape.coordinatorOnlyTitle}"`)
+  }
+  return true
+})
 check('worker: the assignment contract body is in it', () => work.includes('Each worker must understand the assignment before execution'))
-check('worker: the matching section body is in it', () => work.includes('Two checks, not one'))
-check('worker: the handover section body is in it', () => work.includes('Jcode has no separate requirements file'))
-check('worker: the skill sections come in the order 8, 12, 13', () => {
-  const eight = work.indexOf('## 8. Assignment and Reporting Contract')
-  const twelve = work.indexOf('## 12. Requirement Matching')
-  const thirteen = work.indexOf('## 13. Requirement Handover')
-  return eight < twelve && twelve < thirteen
+check('worker: the matching section body is in it', () => work.includes('Two checks: does the check discriminate'))
+check('worker: the handover section body is in it', () => work.includes('.swarm/requirements/<work-item>.md'))
+check('worker: the skill sections come in the order the bundle names them', () => {
+  const positions = bundle.WORKER_SKILL_SECTIONS.map((title) => work.indexOf(`## ${title}`))
+  return positions.every((position) => position >= 0) &&
+    positions.every((position, index) => index === 0 || position > positions[index - 1])
 })
 check('worker: the note comes first, then the policy, then the skill', () => {
-  const note = work.indexOf('## Host identity')
-  const policy = work.indexOf('## 11. Policy and Tool Boundaries')
-  const sections = work.indexOf('## 8. Assignment and Reporting Contract')
-  return note < policy && policy < sections
+  const noteAt = headingAt(work, noteHeadings('worker')[0])
+  const policyAt = headingAt(work, workerPolicyEnd())
+  const skillAt = headingAt(work, bundle.WORKER_SKILL_SECTIONS[0])
+  return noteAt >= 0 && policyAt > noteAt && skillAt > policyAt
 })
 
 // --- 3. Capability gating ---------------------------------------------------
@@ -251,6 +447,33 @@ check('gating: the worker skill bullet is gone on a minimal host', () =>
 // assert on the bullet's own phrase instead of on the tool name.
 check('gating: the surface map stays in the coordinator view on a minimal host', () =>
   coordMin.includes('## Surface map: Jcode to DeepSeek Harness'))
+
+// The full-host model is the lens every check above reads the note through, so
+// it has to carry every surface the note gates a bullet on. A gated surface
+// the model lacks makes the bullet disappear, and the model then claims to be
+// a full host that is not full.
+/**
+ * The surfaces the note gates a bullet on.
+ * @param {string} text - the note.
+ * @returns {string[]} the distinct surface names.
+ */
+const gatedSurfaces = (text) => [...new Set(
+  [...text.matchAll(/<!--\s*swarm:requires\s+([^\s>]+)\s*-->/gu)].map((match) => match[1]),
+)]
+
+check('gating: the full-host model carries every surface the note gates on', () => {
+  const missing = gatedSurfaces(note).filter((name) => !ALL.includes(name))
+  if (missing.length > 0) throw new Error(`the model does not carry: ${missing.join(', ')}`)
+  // The check has to be able to fail: a note that gates a surface the model
+  // does not carry has to be reported, so the probe below adds such a surface
+  // to a copy of the note and the check has to notice it.
+  const probe = `${note}\n<!-- swarm:requires not_a_real_surface -->\n`
+  const undetected = gatedSurfaces(probe).filter((name) => !ALL.includes(name))
+  if (!undetected.includes('not_a_real_surface')) {
+    throw new Error('the check does not notice a gated surface the model does not carry')
+  }
+  return true
+})
 
 // --- 4. No plugin mechanics survive in either view --------------------------
 check('gating: no plugin marker survives in the coordinator view', () =>
@@ -467,10 +690,12 @@ check('crlf gate: the marker itself never reaches the view', () =>
 // Each craft file is registered with the host as a skill of its own, so a lane
 // asks for the craft by name instead of by path. The note has to name them, in
 // both the Coordinator's and the worker's view, or the name a brief uses names
-// nothing.
+// nothing. Every craft skill is in the list: a language skill missing from the
+// note is a lane told to read a file it cannot reach.
 const CRAFT_SKILLS = [
   'swarm-craft-shared', 'swarm-craft-developer', 'swarm-craft-tester',
-  'swarm-craft-reviewer', 'swarm-craft-python',
+  'swarm-craft-reviewer', 'swarm-craft-python', 'swarm-craft-java',
+  'swarm-craft-go', 'swarm-craft-typescript', 'swarm-craft-rust',
 ]
 check('craft: the coordinator view names the registered craft skills', () =>
   CRAFT_SKILLS.every((name) => coord.includes(name)))
@@ -481,5 +706,92 @@ check('craft: the registered skill names the craft skills', () =>
 check('craft: the host registers every craft skill under the name the note names', () =>
   CRAFT_SKILLS.every((name) => skillRegistrations.some((registration) => registration.name === name)))
 
+// The craft bullet is the line a lane acts on: it names the skills to load and
+// the files behind them. The note lists the nine further up, so a check over
+// the whole view passes even when the bullet names five — which is how a Go
+// lane came to be told to read the Python pieces.
+const craftBullet = (view, lead) => view.split(/\r?\n/).find((line) => line.startsWith(lead))
+for (const [label, view, lead] of [
+  ['coordinator', coord, '- The craft guidance every lane works by'],
+  ['worker', work, '- The craft guidance your role works by'],
+]) {
+  const bullet = craftBullet(view, lead)
+  check(`craft: the ${label} craft bullet names every craft skill`, () =>
+    bullet !== undefined && CRAFT_SKILLS.every((name) => bullet.includes(name)))
+  check(`craft: the ${label} craft bullet names every craft file`, () =>
+    bullet !== undefined && CRAFT.every((craft) => bullet.includes(craftPath(craft))))
+}
+
+// --- 13. The Jcode surfaces the views name are mapped ------------------------
+// The shipped text names Jcode commands, settings, flags and config paths.
+// This host has none of them, so every surface a view names has to appear in
+// the surface map, and the worker view, which carries no map, must name none
+// at all: a lane that reads `swarm list` has nothing here to run.
+const mapStart = note.indexOf('## Surface map: Jcode to DeepSeek Harness')
+const mapEnd = note.indexOf('<!-- swarm:note', mapStart)
+const mapCells = note.slice(mapStart, mapEnd).split(/\r?\n/)
+  .filter((line) => line.startsWith('| '))
+  .map((line) => line.split('|')[1] ?? '')
+/**
+ * The shapes a Jcode surface takes in the shipped text.
+ *
+ * A command is named in backticks; the same words in prose ("the server-level
+ * swarm plan") are not a command. The setting forms are Jcode's own config
+ * keys, the flags are Jcode's session flags, and the paths are the files
+ * Jcode reads its override from.
+ * @type {RegExp[]}
+ */
+const SURFACE_PATTERNS = [
+  /`(?:swarm|jcode)(?: [a-z][a-z_-]*)+`/gu,
+  /`\[agents\] [a-z_]+`/gu,
+  /`agents\.[a-z_]+`/gu,
+  /`\[(?:auto)?(?:review|judge)\] enabled`/gu,
+  /(?:~|\.)\/\.jcode\/[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*/gu,
+]
+/**
+ * Every Jcode surface a text names.
+ * @param {string} text - the text to scan.
+ * @returns {string[]} the distinct surface names.
+ */
+const jcodeSurfaces = (text) => [...new Set(SURFACE_PATTERNS.flatMap((pattern) =>
+  [...text.matchAll(pattern)].map((match) => match[0].replace(/`/g, ''))))]
+/**
+ * Whether the surface map names a surface.
+ * @param {string} surface - the surface name.
+ * @returns {boolean} true when a map cell carries it.
+ */
+const mapped = (surface) => mapCells.some((cell) => cell.includes(`\`${surface}\``))
+
+check('R2 the worker view names no Jcode surface', () => jcodeSurfaces(work).length === 0)
+check('R2 every Jcode surface the coordinator view names is mapped', () =>
+  jcodeSurfaces(coord).every(mapped))
+check('R2 every Jcode surface the skill view names is mapped', () =>
+  registeredSkill !== undefined && jcodeSurfaces(registeredSkill.content).every(mapped))
+
+// --- 14. The shipped policy names no Jcode surface ---------------------------
+// The canonical text names the `swarm` tool, the settings around it and the
+// Jcode CLI. The adapted text names this host's surfaces instead, so a Jcode
+// token left in the shipped policy is a passage that was never adapted. The
+// host note may name them: the note is where the map of every replacement
+// lives, and it is not part of the shipped policy.
+const JCODE_TOKENS = [
+  /\bJcode\b/,
+  /\bjcode\b/,
+  /`swarm (?:await_members|list_models|list|message|stop|summary|spawn|launch)`/,
+  /\/(?:auto)?(?:review|judge)\b/,
+  /`\[agents\]/,
+  /~?\/\.jcode\//,
+  /scratch\//,
+  /\btodo lane\b/,
+  /`details`/,
+  /\broot session\b/,
+  /\bforce\b/,
+]
+for (const [name, text] of [['prompt-overlay.md', overlay], ['swarm-prompt.md', brief], ['swarm-engineering.md', skill]]) {
+  const hit = JCODE_TOKENS.find((pattern) => pattern.test(text))
+  check(`R6 ${name} names no Jcode surface`, () => hit === undefined)
+}
+
+console.log(`SUITE CHECKS: ${checks}`)
 console.log(failures === 0 ? 'ALL CHECKS PASSED' : `${failures} CHECK(S) FAILED`)
 process.exit(failures === 0 ? 0 : 1)

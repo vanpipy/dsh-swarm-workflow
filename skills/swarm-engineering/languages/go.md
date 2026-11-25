@@ -14,7 +14,7 @@ language. This file owns the **idioms**: the Go rules that are not generic, the
 version floors they carry, and the traps this language has shipped.
 
 Read the piece that matches what you are changing, before you change it. A
-brief names the piece: "read section 6 of the Go craft before you touch the
+brief names the piece: "read §6 of the Go craft before you touch the
 error handling". Everything here is checkable — if a rule cannot be checked,
 treat it as advice rather than guidance.
 

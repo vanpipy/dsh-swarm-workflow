@@ -14,9 +14,10 @@ result worth reporting. Nothing here repeats the process; everything here is
 about the thing the process asks for.
 
 `shared.md`, beside this file, holds the shared core: the three checks that
-hold in every language, the twelve pieces, the review smells. This file says
-how a Tester applies that core. Where the two overlap, this file is the
-narrower reading of it, for the Tester's hand.
+hold in every language, and the twelve pieces. The review smells live in
+`reviewer.md` §4, beside this file. This file says how a Tester applies that
+core. Where the two overlap, this file is the narrower reading of it, for the
+Tester's hand.
 
 Everything here is a rule you can be shown to have followed or broken. If a
 piece cannot be checked, it is advice, not guidance — treat advice as optional

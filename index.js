@@ -12,9 +12,12 @@
  * execution policy), `swarm-prompt.md` (the delegation briefing),
  * `skills/swarm-engineering/swarm-engineering.md` (the role methods) and
  * `runtime-note.md` (the host note — every fact about this runtime). The first
- * three are the user's own text, shipped byte for byte; the plugin reads them,
- * composes a view of them for the audience it is assembling a prompt for, and
- * never rewrites them.
+ * three are the user's own text; the plugin reads them, composes a view of them
+ * for the audience it is assembling a prompt for, and never rewrites them at
+ * composition time. The text names the surfaces of the host it ships on, so
+ * those three files differ from the upstream canonical by design: every adapted
+ * passage is recorded in `docs/host-adaptation.md` and guarded by the
+ * cross-repo checker.
  *
  * Two properties make the workflow track the host instead of a snapshot:
  * every file is re-read when it changes on disk, and the host facts are
@@ -39,7 +42,9 @@ import { fileURLToPath } from 'node:url'
  * instead of declared: each primitive is bound to a child fiber that starts when
  * the host provides the service behind it (see registerWhenAvailable). A host
  * that provides one of them after this plugin was applied still gets the
- * primitive; a host that never provides it simply never gets that one.
+ * primitive; a host that never provides it simply never gets that one. The
+ * tool registry is waited for in the same way, and for the same reason: it is
+ * read strictly, so a host that is still booting reads it as absent.
  */
 export const inject = ['systemPrompt', 'agents', 'skills']
 
@@ -52,10 +57,11 @@ const SKILL_SOURCE = 'dsh-swarm-workflow'
 /**
  * The bundled markdown files, relative to this module.
  *
- * Four of them are composed into the prompts: three are the user's own text
- * and are only ever read, and the runtime note is the plugin's own file and
- * carries every host-specific fact. The craft files are the guidance the note
- * points at; they are named, not composed.
+ * Four of them are composed into the prompts: three are the user's own text,
+ * read as they are written, and the runtime note is the plugin's own file and
+ * carries the host facts the shipped text cannot state — the surfaces with no
+ * counterpart here. The craft files are the guidance the note points at; they
+ * are named, not composed.
  */
 const RUNTIME_NOTE = './runtime-note.md'
 const PROMPT_OVERLAY = './prompt-overlay.md'
@@ -85,16 +91,22 @@ const CRAFT_FILES = {
  *
  * Section 12 is the Coordinator's operating manual — how to delegate, how to
  * judge a report — and it stays with the Coordinator.
+ *
+ * Exported so the test suite derives the worker's share of the policy from
+ * the bundle's own definition instead of from a hand-written list of titles.
  */
-const WORKER_OVERLAY_CUT = '12. Swarm Orchestration'
+export const WORKER_OVERLAY_CUT = '12. Swarm Orchestration'
 
 /**
  * The skill sections a worker gets verbatim.
  *
  * These are the sections a lane cannot infer from its assignment alone: the
  * shared assignment contract and the two rules every lane reports against.
+ *
+ * Exported so the test suite derives the worker's share of the skill from the
+ * bundle's own definition instead of from a hand-written list of titles.
  */
-const WORKER_SKILL_SECTIONS = [
+export const WORKER_SKILL_SECTIONS = [
   '8. Assignment and Reporting Contract',
   '12. Requirement Matching',
   '13. Requirement Handover',
@@ -200,9 +212,9 @@ function fallbackSkillName(file) {
 /**
  * The host note prepended to the skill's registered description.
  *
- * The description in the skill file is the user's own text and stays byte for
- * byte; the runtime this plugin runs on is named in front of it, because the
- * catalog line is what an agent reads before it decides to load the skill.
+ * The description in the skill file is the user's own text; the runtime this
+ * plugin runs on is named in front of it, because the catalog line is what an
+ * agent reads before it decides to load the skill.
  */
 const HOST_NOTE =
   'On this host the runtime is DeepSeek Harness, not Jcode: the methods are the same, and the live surfaces are the ones the runtime note names. '
@@ -846,24 +858,34 @@ function optionalService(ctx, key) {
 }
 
 /**
- * Run a registration as soon as the host exposes a service — and not before.
+ * Run a registration as soon as the host exposes the services it needs — and not before.
  *
  * The services behind the swarm primitives live in their own plugins, and a
  * plugin applied while the host is still booting can find them absent for a
  * moment. Sampling availability once would drop the primitive for the rest of
- * the session, so the registration is bound to the service instead: a child
- * fiber that the host starts as soon as the service resolves, and that never
- * starts on a host that does not provide it.
+ * the session, so the registration is bound to the services instead: a child
+ * fiber that the host starts as soon as they all resolve, and that never
+ * starts on a host that does not provide them.
+ *
+ * The host's tool registry is one of the services a primitive waits for, and it
+ * is waited for rather than sampled. A service is read strictly: one whose
+ * provider is still loading reads as absent. A cold boot that sampled the
+ * registry once would therefore read it as absent, skip the whole
+ * registration, and drop every primitive for the session without a word. A
+ * fiber that waits for the registry registers when the registry is really
+ * there.
  *
  * A host without ctx.inject keeps the older behaviour: register now when the
- * service is already there, and do nothing when it is not.
+ * services are already there, and do nothing when they are not.
  * @param {object} ctx - the plugin context.
- * @param {string} service - the service key to wait for.
+ * @param {string|string[]} services - the service keys to wait for.
  * @param {string} name - the name the waiting fiber carries in the host's log.
- * @param {Function} register - the registration; it returns a disposer or undefined.
+ * @param {Function} register - the registration; it is called with the context
+ * that holds the services, and returns a disposer or undefined.
  * @returns {void}
  */
-function registerWhenAvailable(ctx, service, name, register) {
+function registerWhenAvailable(ctx, services, name, register) {
+  const wanted = Array.isArray(services) ? services : [services]
   let inject
   try {
     inject = typeof ctx.inject === 'function' ? ctx.inject : undefined
@@ -874,11 +896,60 @@ function registerWhenAvailable(ctx, service, name, register) {
     const fiber = Object.defineProperty(function swarmWaitingFiber(childCtx) {
       childCtx.effect(() => register(childCtx))
     }, 'name', { value: name, configurable: true })
-    inject.call(ctx, [service], fiber)
+    inject.call(ctx, wanted, fiber)
     return
   }
-  if (optionalService(ctx, service) === undefined) return
+  if (!wanted.every((service) => optionalService(ctx, service) !== undefined)) return
   ctx.effect(() => register(ctx))
+}
+
+/**
+ * Report a primitive the host refused to register.
+ *
+ * The console is the one channel every host has. A refusal nobody can see is
+ * a refusal that is swallowed: the primitive is missing from the session and
+ * nothing says why. The refusal is reported, never hidden, and the primitive
+ * it belongs to stays unregistered — a half-registered tool is worse than an
+ * absent one.
+ * @param {string} name - the name of the primitive.
+ * @param {any} error - what the host threw.
+ * @returns {void}
+ */
+function reportRefusedRegistration(name, error) {
+  const reason = error instanceof Error ? error.message : String(error)
+  console.warn(`swarm: the host refused to register the tool "${name}": ${reason}`)
+}
+
+/**
+ * Report a skill the host refused to register.
+ *
+ * The console is the one channel every host has. A refusal nobody can see is
+ * a refusal that is swallowed: the skill is missing from the catalog and
+ * nothing says why. The refusal is reported, never hidden, and the skill it
+ * belongs to stays unregistered — a half-registered skill is worse than an
+ * absent one.
+ * @param {string} name - the name of the skill.
+ * @param {any} error - what the host threw.
+ * @returns {void}
+ */
+function reportRefusedSkill(name, error) {
+  const reason = error instanceof Error ? error.message : String(error)
+  console.warn(`swarm: the host refused to register the skill "${name}": ${reason}`)
+}
+
+/**
+ * Report a skill catalog that could not be synchronized.
+ *
+ * The refusal of one skill is reported by reportRefusedSkill; this is the
+ * report for a synchronization that failed as a whole. Both go to the
+ * console, because the console is the one channel every host has, and a
+ * failure nobody can see is a failure that is swallowed.
+ * @param {any} error - what failed.
+ * @returns {void}
+ */
+function reportFailedSkillSync(error) {
+  const reason = error instanceof Error ? error.message : String(error)
+  console.warn(`swarm: the skills could not be synchronized: ${reason}`)
 }
 
 /**
@@ -1397,6 +1468,66 @@ export function apply(ctx) {
   let skillStamp = null
   let skillDisposers = []
   let commandRegistered = false
+  // The skills the host refused to register, and the failures already reported.
+  // A host that refuses one skill must not lose the others, and a failure that
+  // keeps happening is one failure: it is reported once, not once per render.
+  const pendingSkills = new Map()
+  const reportedFailures = new Map()
+
+  /**
+   * Report a failure, once per distinct failure.
+   *
+   * The catalog is synchronized on every prompt, so a failure that keeps
+   * happening would print on every render and bury the report in noise. The
+   * reason is part of what is compared: the same reason is the same failure,
+   * and a different reason is a different failure worth hearing about.
+   * @param {string} key - what failed.
+   * @param {any} error - what the host threw.
+   * @param {Function} report - prints the failure.
+   * @returns {void}
+   */
+  const reportOnce = (key, error, report) => {
+    const reason = error instanceof Error ? error.message : String(error)
+    if (reportedFailures.get(key) === reason) return
+    reportedFailures.set(key, reason)
+    report(error)
+  }
+
+  /**
+   * Register one skill with the host.
+   *
+   * A host that refuses a skill must not skip the others: the others still
+   * register. This one is abandoned whole — the registration threw, so nothing
+   * of it is half-applied — and the refusal is reported, because a refusal
+   * nobody can see is a refusal that is swallowed.
+   * @param {object} definition - the skill to register.
+   * @returns {void}
+   */
+  const registerSkill = (definition) => {
+    try {
+      const disposer = ctx.skills.register(definition)
+      if (typeof disposer === 'function') skillDisposers.push(disposer)
+      pendingSkills.delete(definition.name)
+      // The skill is in the catalog now. A refusal that comes back later is a
+      // new failure, not the one already reported.
+      reportedFailures.delete(definition.name)
+    } catch (error) {
+      pendingSkills.set(definition.name, definition)
+      reportOnce(definition.name, error, (thrown) => reportRefusedSkill(definition.name, thrown))
+    }
+  }
+
+  /**
+   * Try again the skills the host refused to register.
+   *
+   * A host that refuses a skill may have been busy, not unwilling. The
+   * catalog is rebuilt on every prompt, so the refusal is worth another try —
+   * and the refusal that repeats is still one refusal, so it is reported once.
+   * @returns {void}
+   */
+  const retryPendingSkills = () => {
+    for (const definition of [...pendingSkills.values()]) registerSkill(definition)
+  }
 
   /**
    * Register the skills, and re-register them when their files changed on disk.
@@ -1421,15 +1552,22 @@ export function apply(ctx) {
       ...files.map((file) => `${file}:${fileCache.get(file)?.stamp ?? 'missing'}`),
       `${RUNTIME_NOTE}:${fileCache.get(RUNTIME_NOTE)?.stamp ?? 'missing'}`,
     ].join('|')
-    if (stamp === skillStamp) return
+    if (stamp === skillStamp) {
+      // The files did not change, so the catalog holds what it holds. A skill
+      // the host refused is worth another try: a host that was busy is not a
+      // host that will never accept it.
+      retryPendingSkills()
+      return
+    }
     skillStamp = stamp
     for (const disposer of skillDisposers) disposer()
     skillDisposers = []
+    pendingSkills.clear()
     const hostBlocks = [...noteBlocks(resolveNote(note), 'skill')].join('\n\n')
     for (const [index, file] of files.entries()) {
       const parsed = parseSkillFile(bodies[index], fallbackSkillName(file), DEFAULT_SKILL_DESCRIPTION)
       const content = [hostBlocks, parsed.content].join('\n\n')
-      const disposer = ctx.skills.register({
+      registerSkill({
         name: parsed.name,
         // The description in the file is the file's own text and stays byte for
         // byte; the runtime this plugin runs on is named in front of it,
@@ -1442,7 +1580,6 @@ export function apply(ctx) {
           ? MAIN_WHEN_TO_USE
           : parsed.whenToUse ?? DEFAULT_WHEN_TO_USE,
       })
-      if (typeof disposer === 'function') skillDisposers.push(disposer)
     }
   }
 
@@ -1458,25 +1595,34 @@ export function apply(ctx) {
   // lane — the Coordinator, a native teammate, a delegated worker — reaches
   // the host's own worktree, board and child lanes through one call.
   //
-  // Each primitive waits for the service behind it instead of sampling
-  // availability once: a host that provides that service after this plugin was
-  // applied still registers the tool, and a host that never provides it never
-  // registers it at all.
-  const tools = toolService(ctx)
-  if (tools !== undefined) {
-    for (const definition of buildSwarmToolDefinitions(ctx)) {
-      const service = SWARM_TOOL_SERVICES[definition.name]
-      if (service === undefined) continue
-      registerWhenAvailable(ctx, service, definition.name, () => {
-        try {
-          const disposer = tools.register(definition)
-          return typeof disposer === 'function' ? disposer : undefined
-        } catch {
-          // One host that refuses a tool must not skip the others.
-          return undefined
-        }
-      })
-    }
+  // Each primitive waits for the tool registry and for the service behind it
+  // instead of sampling availability once: a host that provides either of them
+  // after this plugin was applied still registers the tool, and a host that
+  // never provides them never registers it at all.
+  //
+  // The registry is waited for, not sampled. A service whose provider is still
+  // loading reads as absent, so a cold boot that read the registry once would
+  // drop every primitive for the whole session, silently. The registry is read
+  // from the waiting fiber's own context, which holds it by then.
+  for (const definition of buildSwarmToolDefinitions(ctx)) {
+    const service = SWARM_TOOL_SERVICES[definition.name]
+    if (service === undefined) continue
+    registerWhenAvailable(ctx, ['tools', service], definition.name, (childCtx) => {
+      const tools = optionalService(childCtx, 'tools')
+      if (tools === undefined) return undefined
+      try {
+        const disposer = tools.register(definition)
+        return typeof disposer === 'function' ? disposer : undefined
+      } catch (error) {
+        // One host that refuses a tool must not skip the others: the others
+        // still register. This one is abandoned whole — the registration
+        // threw, so nothing of it is half-applied — and the refusal is
+        // reported, because a refusal nobody can see is a refusal that is
+        // swallowed.
+        reportRefusedRegistration(definition.name, error)
+        return undefined
+      }
+    })
   }
 
   ctx.effect(() => ctx.systemPrompt.section({
@@ -1486,8 +1632,10 @@ export function apply(ctx) {
     text: (context) => {
       try {
         syncSkills()
-      } catch {
-        // A skill that cannot be re-registered must not break the prompt.
+      } catch (error) {
+        // A skill that cannot be re-registered must not break the prompt, and
+        // it must not vanish either: the failure is reported.
+        reportOnce('the skill catalog', error, reportFailedSkillSync)
       }
       const names = probeToolNames(ctx, context)
       // The runtime note is the only file that carries markers, so it is also
