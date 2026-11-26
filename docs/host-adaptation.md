@@ -36,8 +36,11 @@ counterpart here, the passage says so and keeps the rule.
   documented port transform rather than adapted.
 - `runtime-note.md` is the plugin's own file: it holds every host fact, and
   the surface map in it records what each canonical surface became.
-- `index.js` composes the views; it does not rewrite the shipped text at
-  composition time.
+- `index.js` composes the views; it does not change what a passage says. The
+  composition cuts the policy at the section a worker does not need, drops the
+  lines that name a surface this session does not have, and labels the skill's
+  section headings with the document they belong to, because the policy and
+  the skill number their sections independently.
 
 ## The table
 

@@ -339,14 +339,38 @@ const expectedCoordinatorSections = new Set([
   CAPABILITY_HEADING,
 ])
 
+// The skill's sections are numbered on their own, so a worker's prompt carries
+// a policy section 8 and a skill section 8. The bundle labels the skill's
+// heading with the document it belongs to, so the expectation is derived the
+// same way the view is built rather than written out a second time.
+const labelledSkillHeadings = (title) => {
+  const section = call('extractSection', skill, title)
+  if (section === null) throw new Error(`the skill has no section "${title}"`)
+  return headings(call('labelSkillSection', section))
+}
+
+/**
+ * The title a section of the shipped policy carries.
+ * @param {string} number - the section number.
+ * @returns {string} the title, without its number.
+ */
+const policySectionTitle = (number) => {
+  const found = headings(overlay).find((title) => title.startsWith(`${number}. `))
+  if (found === undefined) throw new Error(`the policy has no section ${number}`)
+  return found.replace(`${number}. `, '')
+}
+
+/**
+ * The number a section title carries.
+ * @param {string} title - the section title.
+ * @returns {string} the number.
+ */
+const sectionNumberOf = (title) => title.split('.')[0]
+
 const expectedWorkerSections = new Set([
   ...noteHeadings('worker'),
   ...workerPolicyHeadings(),
-  ...bundle.WORKER_SKILL_SECTIONS.flatMap((title) => {
-    const section = call('extractSection', skill, title)
-    if (section === null) throw new Error(`the skill has no section "${title}"`)
-    return headings(section)
-  }),
+  ...bundle.WORKER_SKILL_SECTIONS.flatMap((title) => labelledSkillHeadings(title)),
   CAPABILITY_HEADING,
 ])
 
@@ -404,16 +428,50 @@ check('worker: the assignment contract body is in it', () => work.includes('Each
 check('worker: the matching section body is in it', () => work.includes('Two checks: does the check discriminate'))
 check('worker: the handover section body is in it', () => work.includes('.swarm/requirements/<work-item>.md'))
 check('worker: the skill sections come in the order the bundle names them', () => {
-  const positions = bundle.WORKER_SKILL_SECTIONS.map((title) => work.indexOf(`## ${title}`))
+  const positions = bundle.WORKER_SKILL_SECTIONS.map((title) => work.indexOf(`## ${labelledSkillHeadings(title)[0]}`))
   return positions.every((position) => position >= 0) &&
     positions.every((position, index) => index === 0 || position > positions[index - 1])
 })
 check('worker: the note comes first, then the policy, then the skill', () => {
   const noteAt = headingAt(work, noteHeadings('worker')[0])
   const policyAt = headingAt(work, workerPolicyEnd())
-  const skillAt = headingAt(work, bundle.WORKER_SKILL_SECTIONS[0])
+  const skillAt = headingAt(work, labelledSkillHeadings(bundle.WORKER_SKILL_SECTIONS[0])[0])
   return noteAt >= 0 && policyAt > noteAt && skillAt > policyAt
 })
+
+// The policy and the skill number their sections independently, so a worker's
+// prompt carries a policy section 8 and a skill section 8, and the skill's
+// section 12 follows a policy whose own section 12 never reached the worker.
+// A number that names two sections is only usable when the view says which
+// document each number belongs to: the skill's headings carry the document,
+// and the note names both numbers in words.
+check('worker: every skill section heading names the document it belongs to', () =>
+  bundle.WORKER_SKILL_SECTIONS.every((title) => {
+    const heading = labelledSkillHeadings(title)[0]
+    return heading.startsWith('Skill §') && work.includes(`## ${heading}`)
+  }))
+check('worker: the policy headings keep their own numbers', () =>
+  work.includes(`## 8. ${policySectionTitle(8)}`) &&
+  !work.includes(`## Skill §8. ${policySectionTitle(8)}`))
+check('worker: a number that names two sections names the document of each', () => {
+  const shared = bundle.WORKER_SKILL_SECTIONS
+    .map((title) => sectionNumberOf(title))
+    .filter((number) => headings(overlay).some((title) => title.startsWith(`${number}. `)))
+  return shared.length > 0 && shared.every((number) => work.includes(policySectionTitle(number)))
+})
+check('worker: the note names the skill sections it labels', () =>
+  bundle.WORKER_SKILL_SECTIONS.every((title) => {
+    const number = sectionNumberOf(title)
+    const name = title.replace(`${number}. `, '')
+    return work.includes(`skill §${number} (${name})`)
+  }))
+check('worker: the note says where the policy stops', () => {
+  const cut = bundle.WORKER_OVERLAY_CUT
+  const number = sectionNumberOf(cut)
+  return work.includes(`it stops before section ${number} (${cut.replace(`${number}. `, '')})`)
+})
+check('coordinator: the worker note is not in the coordinator view', () =>
+  !coord.includes("the swarm-engineering skill's own sections"))
 
 // The Coordinator-only prose of the policy does not reach a worker. The bundle
 // cuts the policy at the section the note says stays with the Coordinator, so
@@ -672,7 +730,8 @@ const thinSkill = [
 const thin = worker(ALL, {}) && call('composeWorkerPrompt', { note, overlay, skill: thinSkill, names: ALL, options: {} })
 check('missing section: the composition still returns text', () => typeof thin === 'string' && thin.length > 0)
 check('missing section: the sections that are present are kept', () =>
-  thin.includes('## 8. Assignment and Reporting Contract') && thin.includes('## 12. Requirement Matching'))
+  thin.includes(call('labelSkillSection', '## 8. Assignment and Reporting Contract')) &&
+  thin.includes(call('labelSkillSection', '## 12. Requirement Matching')))
 check('missing section: the missing section is named in the result', () => thin.includes('Requirement Handover'))
 
 // --- 10. The craft wiring -----------------------------------------------------
@@ -744,6 +803,10 @@ check('craft: a missing craft file yields no path', () =>
 // cut by heading, and a heading the bundle cannot see is a section the bundle
 // no longer has — the worker is then told to read a section that is not there.
 const crlf = (text) => text.replace(/\r?\n/g, '\r\n')
+// The expected heading comes from the bundle's own labelling of the same CRLF
+// text, so the check states what the view must carry without a second copy of
+// the label format.
+const crlfHeading = (title) => call('labelSkillSection', crlf(`## ${title}`))
 const crlfSkill = crlf(skill)
 const crlfOverlay = crlf(overlay)
 const crlfNote = crlf(note)
@@ -751,11 +814,11 @@ const crlfWorker = call('composeWorkerPrompt', { note, overlay: crlfOverlay, ski
 const crlfWorkerAll = call('composeWorkerPrompt', { note: crlfNote, overlay: crlfOverlay, skill: crlfSkill, names: ALL, options: {} })
 
 check('crlf: the worker view keeps the requirement handover section', () =>
-  crlfWorker.includes('## 13. Requirement Handover'))
+  crlfWorker.includes(crlfHeading('13. Requirement Handover')))
 check('crlf: the worker view keeps the assignment contract section', () =>
-  crlfWorker.includes('## 8. Assignment and Reporting Contract'))
+  crlfWorker.includes(crlfHeading('8. Assignment and Reporting Contract')))
 check('crlf: the worker view keeps the requirement matching section', () =>
-  crlfWorker.includes('## 12. Requirement Matching'))
+  crlfWorker.includes(crlfHeading('12. Requirement Matching')))
 check('crlf: the worker view still cuts the orchestration section', () =>
   !crlfWorker.includes('## 12. Swarm Orchestration'))
 check('crlf: the worker view leaves no plugin marker', () => !crlfWorker.includes('<!-- swarm:'))
@@ -765,9 +828,9 @@ check('crlf: the worker view still names the craft files by their resolved paths
   CRAFT.every((craft) => crlfWorker.includes(craftPath(craft)) &&
     craftPathLines(crlfWorker, craft.name).length > 0))
 check('crlf: a note with CRLF endings keeps the same sections', () =>
-  crlfWorkerAll.includes('## 13. Requirement Handover') &&
-  crlfWorkerAll.includes('## 8. Assignment and Reporting Contract') &&
-  crlfWorkerAll.includes('## 12. Requirement Matching'))
+  crlfWorkerAll.includes(crlfHeading('13. Requirement Handover')) &&
+  crlfWorkerAll.includes(crlfHeading('8. Assignment and Reporting Contract')) &&
+  crlfWorkerAll.includes(crlfHeading('12. Requirement Matching')))
 check('crlf: a note with CRLF endings still names the craft files', () =>
   CRAFT.every((craft) => crlfWorkerAll.includes(craftPath(craft)) &&
     craftPathLines(crlfWorkerAll, craft.name).length > 0))

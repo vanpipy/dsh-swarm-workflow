@@ -124,10 +124,22 @@ console.log(`characters: ${worker.length}   lines: ${worker.split('\n').length}`
 for (const anchor of [
   '## The worker lane on this host',
   '## 11. Policy and Tool Boundaries',
-  '## 8. Assignment and Reporting Contract',
-  '## 12. Requirement Matching',
-  '## 13. Requirement Handover',
 ]) check(`the worker prompt carries "${anchor}"`, worker.includes(anchor))
+// The skill numbers its sections on its own, so the bundle labels the skill's
+// heading with the document it belongs to: the worker prompt says "Skill §8"
+// where the policy says "§8". A bundle that has not been reinstalled yet
+// still serves the unlabelled form, and both are accepted here.
+for (const [number, title] of [
+  ['8', 'Assignment and Reporting Contract'],
+  ['12', 'Requirement Matching'],
+  ['13', 'Requirement Handover'],
+]) {
+  const labelled = `## Skill §${number}. ${title}`
+  const plain = `## ${number}. ${title}`
+  check(`the worker prompt carries the skill's section ${number} (${title})`,
+    worker.includes(labelled) || worker.includes(plain),
+    worker.includes(labelled) ? 'labelled' : 'plain')
+}
 check('the worker prompt does not carry the orchestration manual', !worker.includes('## 12. Swarm Orchestration'))
 check('the worker prompt does not carry the coordinator section', !worker.includes('## The Coordinator on this host'))
 

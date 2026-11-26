@@ -13,11 +13,13 @@
  * `skills/swarm-engineering/swarm-engineering.md` (the role methods) and
  * `runtime-note.md` (the host note — every fact about this runtime). The first
  * three are the user's own text; the plugin reads them, composes a view of them
- * for the audience it is assembling a prompt for, and never rewrites them at
- * composition time. The text names the surfaces of the host it ships on, so
- * those three files differ from the upstream canonical by design: every adapted
- * passage is recorded in `docs/host-adaptation.md` and guarded by the
- * cross-repo checker.
+ * for the audience it is assembling a prompt for, and does not change what a
+ * passage says: the composition cuts the policy at the section a worker does
+ * not need, drops the lines that name a surface this session does not have, and
+ * labels the skill's section headings with the document they belong to. The
+ * text names the surfaces of the host it ships on, so those three files differ
+ * from the upstream canonical by design: every adapted passage is recorded in
+ * `docs/host-adaptation.md` and guarded by the cross-repo checker.
  *
  * Two properties make the workflow track the host instead of a snapshot:
  * every file is re-read when it changes on disk, and the host facts are
@@ -480,6 +482,92 @@ export function extractUntil(markdown, title) {
 }
 
 /**
+ * The number a section title carries, and the title without it.
+ *
+ * The shipped files number their sections ("8. ", "12.4 "), and a caller
+ * asks for a section by name, so the number is split off here: the number
+ * says where the section sits, the title says what it is.
+ * @param {string} title - the section title.
+ * @returns {{ number: string, title: string } | null} the split, or null when the title carries no number.
+ */
+function splitSectionNumber(title) {
+  const match = /^(\d+(?:\.\d+)*)(?:[A-Za-z]?\.?)\s+(.*)$/u.exec(title)
+  if (match === null) return null
+  return { number: match[1], title: match[2] }
+}
+
+/**
+ * The label a skill section's heading carries in a worker's prompt.
+ *
+ * The policy and the skill number their sections independently, so one number
+ * names two different sections in a worker's prompt: the policy's section 8
+ * is Verification and Review Discipline, the skill's section 8 is the
+ * Assignment and Reporting Contract. A heading that names the document it
+ * belongs to removes the ambiguity without touching what the section says.
+ */
+const SKILL_SECTION_LABEL = 'Skill §'
+
+/**
+ * Label one skill section's heading with the document the section belongs to.
+ *
+ * Only the label is added; the heading's own text is the user's, and the
+ * section body is untouched.
+ * @param {string} section - the section, verbatim.
+ * @returns {string} the section with its heading labelled.
+ */
+export function labelSkillSection(section) {
+  if (typeof section !== 'string') return ''
+  const lines = section.split('\n')
+  const at = lines.findIndex((line) => HEADING.test(line))
+  if (at === -1) return section
+  lines[at] = lines[at].replace(HEADING, (match, hashes, title) => {
+    const labelled = title.replace(/^(\d+(?:\.\d+)*)/u, `${SKILL_SECTION_LABEL}$1`)
+    // The match holds the space between the hashes and the title, so the
+    // replacement has to put it back: "## 8. ..." becomes "## Skill §8. ...".
+    return `${hashes} ${labelled}`
+  })
+  return lines.join('\n')
+}
+
+/**
+ * The note that tells a worker which document each section number belongs to.
+ *
+ * The note names the skill's own sections, names the policy section that
+ * shares a number with one of them, and says where the policy stops, so a
+ * worker that cites "section 8" can say which document it meant.
+ * @param {string | null} policy - the policy text the worker gets.
+ * @returns {string} the note.
+ */
+function skillNumberingNote(policy) {
+  const skillSections = WORKER_SKILL_SECTIONS.map((title) => {
+    const split = splitSectionNumber(title)
+    return split === null ? title : `skill §${split.number} (${split.title})`
+  })
+  const skillNumbers = new Set(
+    WORKER_SKILL_SECTIONS
+      .map((title) => splitSectionNumber(title))
+      .filter((split) => split !== null)
+      .map((split) => split.number),
+  )
+  const shared = findHeadings(policy ?? '')
+    .filter((heading) => heading.level === 2)
+    .map((heading) => splitSectionNumber(heading.title))
+    .filter((split) => split !== null && skillNumbers.has(split.number))
+    .map((split) => `its section ${split.number} is ${split.title}`)
+  const cut = splitSectionNumber(WORKER_OVERLAY_CUT)
+  const sharedClause = shared.length > 0 ? `${shared.join('; ')}; ` : ''
+  const policySentence =
+    policy === null || policy.trim() === ''
+      ? 'This prompt carries no global execution policy, so the skill numbers below are the only section numbers in it.'
+      : `The global execution policy above is numbered on its own - ${sharedClause}it stops before section ${cut?.number ?? '12'} (${cut?.title ?? 'Swarm Orchestration'}), the Coordinator's manual, which stays with the Coordinator.`
+  const sentences = [
+    `> The sections below are the swarm-engineering skill's own sections, so their headings carry the skill's number: ${skillSections.join(', ')}.`,
+    policySentence,
+  ]
+  return sentences.join(' ')
+}
+
+/**
  * The runtime-note blocks one audience gets.
  * @param {string} raw - the raw runtime note.
  * @param {string} scope - the audience: coordinator, worker or skill.
@@ -603,11 +691,17 @@ export function composeWorkerPrompt(input) {
   const policy = extractUntil(overlay, WORKER_OVERLAY_CUT)
   const sections = WORKER_SKILL_SECTIONS.map((title) => {
     const section = extractSection(skill, title)
-    return section ?? missingSectionNotice(bundleName(SKILL_FILE), title)
+    // The skill numbers its sections on its own, so a worker's prompt would
+    // otherwise carry two sections called 8. The heading says which document
+    // the section belongs to, and the note below says it in words.
+    return section === null
+      ? missingSectionNotice(bundleName(SKILL_FILE), title)
+      : labelSkillSection(section)
   })
   const parts = [
     ...noteBlocks(resolveNote(input?.note ?? ''), 'worker'),
     policy ?? missingSectionNotice(bundleName(PROMPT_OVERLAY), WORKER_OVERLAY_CUT),
+    skillNumberingNote(policy),
     ...sections,
   ].filter((part) => part.length > 0)
   return renderPrompt(parts.join('\n\n'), input?.names, input?.options ?? {})
