@@ -6,6 +6,11 @@
 //   - the em-dash mojibake signature U+9225, which is an em dash read as
 //     CP936 and written back out as UTF-8.
 //
+// A fourth is invisible in the same way: the UTF-8 byte order mark. It is not
+// damage to the text, but it is invisible to a reader, it breaks a JSON
+// parser that is handed the bytes, and no other check in this bundle looks at
+// the first three bytes of a file.
+//
 // The policy suites compare the three policy files and the nine craft files
 // with the canonical, so damage in those files is caught. Nothing compares
 // docs/host-adaptation.md or README.md, so damage there is invisible. This
@@ -115,7 +120,7 @@ const content = new Map()
 for (const file of files) {
   const bytes = readFileSync(join(root, ...file.split('/')))
   const offset = firstInvalidByte(bytes)
-  content.set(file, { text: offset < 0 ? bytes.toString('utf8') : null, offset })
+  content.set(file, { text: offset < 0 ? bytes.toString('utf8') : null, offset, bytes })
 }
 
 const scanned = new Set(files)
@@ -147,6 +152,19 @@ check(
     ? `no scanned file carries the replacement character U+FFFD outside ${QUOTED_EVIDENCE}/`
     : `no scanned file carries the replacement character U+FFFD outside ${QUOTED_EVIDENCE}/ -> ${replaced.join(', ')}`,
   () => replaced.length === 0,
+)
+
+const withBom = files.filter((file) => {
+  const bytes = content.get(file).bytes
+  return bytes.length >= 3
+    && bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf
+    && !file.startsWith(`${QUOTED_EVIDENCE}/`)
+})
+check(
+  withBom.length === 0
+    ? `no scanned file carries a UTF-8 byte order mark outside ${QUOTED_EVIDENCE}/`
+    : `no scanned file carries a UTF-8 byte order mark outside ${QUOTED_EVIDENCE}/ -> ${withBom.join(', ')}`,
+  () => withBom.length === 0,
 )
 
 const mangled = files.filter((file) => {

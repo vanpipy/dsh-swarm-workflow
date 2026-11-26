@@ -278,6 +278,31 @@ The profile records the plugin as a git dependency of that repository, so the
 installed copy lives in the profile (`node_modules/dsh-swarm-workflow`). To
 move to a newer commit, publish it and run the install command again.
 
+Two things about that install are worth knowing before you touch it:
+
+* **The manifest names a branch; the lockfile names a commit.** The profile's
+  `package.json` records `github:vanpipy/dsh-swarm-workflow`, and a git
+  dependency without a revision follows the default branch. The commit that is
+  really installed is pinned in `pnpm-lock.yaml` — read that file, not the
+  manifest, to know what runs, and pin the commit yourself when you install:
+  `github:vanpipy/dsh-swarm-workflow#<commit>`.
+* **The installed copy is hard-linked into the package store.** pnpm links the
+  files instead of copying them, so a file edited in place under
+  `node_modules/dsh-swarm-workflow` is edited in the store too, for every
+  project on that version. Change the checkout, not the installed copy.
+
+Two things about that install are worth knowing before you touch it:
+
+* **The manifest names a branch; the lockfile names a commit.** The profile's
+  `package.json` records `github:vanpipy/dsh-swarm-workflow`, and a git
+  dependency without a revision follows the default branch. The commit that
+  really runs is pinned in `pnpm-lock.yaml` — read that file, not the manifest,
+  to know what is installed. A `pnpm update` moves the pin.
+* **The installed copy is hard-linked into the package store.** pnpm links the
+  files instead of copying them, so a file edited in place under
+  `node_modules/dsh-swarm-workflow` is edited in the store too, for every
+  project on that version. Change the checkout, never the installed copy.
+
 ## Develop
 
 The repository is also the checkout you edit. To work on the plugin itself,
@@ -307,6 +332,14 @@ not the install route.
   `node_modules` junction behind. Remove it with
   `cmd /c rmdir <profile>\node_modules\dsh-swarm-workflow` — the junction
   only, never `/s`.
+* To go back from a linked install to the published package, restore the
+  profile's own `package.json` and `pnpm-lock.yaml` and then reinstall **with
+  `--force`**: `pnpm install --frozen-lockfile --force`. The force matters.
+  Without it pnpm answers "Already up to date" and leaves the checkout's
+  junction in `node_modules`, so the manifest claims the published package
+  while the directory is still the checkout — a fork the manifest cannot see.
+  An older backup of the profile restores an older **commit of the plugin**, so
+  read the commit in `pnpm-lock.yaml` before you restore one.
 * To move the install to another repository, remove the bundle **first**, then
   install from the new address: two bundles contributing the same row id is a
   conflict. The scope lives in four places: `package.json`'s name, the patch
@@ -326,7 +359,7 @@ skills/swarm-engineering/tester.md   the tester's craft (the plugin's prose)
 skills/swarm-engineering/reviewer.md the reviewer's craft (the plugin's prose)
 skills/swarm-engineering/languages/  the language pieces, one file per language (python, java, go, typescript, rust)
 cordis.patch.yml              the profile row (id: swarm-workflow)
-client.js, locale/, icon.svg  the Web-GUI side
+client.js, locale/, icon.svg  the Web-GUI side (the card renders the English literals today, so the locale files are carried for the face that is not wired up yet and no code path reads them)
 package.json                   the manifest: the name, the version, and the `files` allowlist that decides what ships
 README.md                     this file: what the bundle does, how it is installed, and how it is checked
 test/                         the suite that travels with the bundle

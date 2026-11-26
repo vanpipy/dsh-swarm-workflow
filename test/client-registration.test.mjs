@@ -146,8 +146,12 @@ check('the tool view key is one of the bundle\'s own wire tool names', () => {
   const index = readFileSync(resolve(bundle, 'index.js'), 'utf8');
   const names = index.match(/SWARM_TOOL_NAMES\s*=\s*\[([^\]]*)\]/);
   assert(names, 'index.js does not export SWARM_TOOL_NAMES');
-  assert(names[1].includes("'swarm_task'") || names[1].includes('"swarm_task"'),
-    'the wire tool names are [' + names[1].trim() + ']');
+  const wire = Array.from(names[1].matchAll(/['"]([^'"]+)['"]/g), (match) => match[1]);
+  assert(wire.length > 0, 'the wire tool names are [' + names[1].trim() + ']');
+  assert(toolview, 'no registration into "tool.call.toolview"');
+  assert(wire.includes(toolview.options.key),
+    'the tool view is keyed ' + JSON.stringify(toolview.options.key)
+    + ', which is not one of the bundle\'s own wire tool names [' + wire.join(', ') + ']');
 });
 
 check('the composer dock entry carries a non-empty label', () => {

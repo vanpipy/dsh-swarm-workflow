@@ -1,4 +1,4 @@
-﻿import { renderPrompt } from 'file:///D:/project/dsh-plugins/swarm-workflow/index.js'
+import { renderPrompt } from 'file:///D:/project/dsh-plugins/swarm-workflow/index.js'
 import { readFileSync } from 'node:fs'
 const MINIMAL = ['subagent','todo_write']
 const worker = readFileSync('D:/project/dsh-plugins/swarm-workflow/swarm-worker-prompt.md','utf8')

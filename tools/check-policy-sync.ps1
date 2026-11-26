@@ -986,7 +986,10 @@ if ($Mode -eq 'Refresh') {
     generatedOn     = (Get-Date -Format 'yyyy-MM-dd')
     sections        = @($refreshEntries)
   }
-  $json = $doc | ConvertTo-Json -Depth 6
+  # ConvertTo-Json emits the platform's line ending, so a refresh in a tree
+  # that holds LF would rewrite the record with CRLF and leave a whitespace-only
+  # diff in a tracked file. The record is written with LF, always.
+  $json = (($doc | ConvertTo-Json -Depth 6) -replace "`r`n", "`n")
   [System.IO.File]::WriteAllText($recordPath, ($json + "`n"), (New-Object System.Text.UTF8Encoding($false)))
   ""
   "RECORD WRITTEN: $recordPath  ($($refreshEntries.Count) adapted section(s), canonicalCommit $newCommit)"

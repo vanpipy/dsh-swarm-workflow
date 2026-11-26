@@ -689,6 +689,42 @@ check('inventory: the README states the number of test beds the validation recor
   return true
 })
 
+// The README states how many suites the runner runs. The runner knows, so the
+// number is read from the runner and compared with the README's own claim: a
+// suite that is added or removed, and a README that is not updated with it,
+// fail here instead of sending a reader after a count that is wrong.
+const runnerSource = readFileSync(fileURLToPath(new URL('../test/run.mjs', import.meta.url)), 'utf8')
+const suiteList = runnerSource.match(/const suites = \[([\s\S]*?)\]/)
+const runnerSuites = suiteList === null ? 0 : (suiteList[1].match(/\.test\.mjs/g) ?? []).length
+// The policy self-check is the step after the test suites, so it counts too.
+const expectedSuites = runnerSuites + 1
+const STEP_ORDINALS = {
+  first: 1, second: 2, third: 3, fourth: 4, fifth: 5, sixth: 6, seventh: 7,
+  eighth: 8, ninth: 9, tenth: 10, eleventh: 11, twelfth: 12,
+}
+check('inventory: the README states the number of suites the runner runs', () => {
+  const stated = [...readme.matchAll(/\((\d+)\s+suites?/g)].map((match) => Number(match[1]))
+  if (stated.length === 0) throw new Error('the README states no suite count')
+  const wrong = stated.filter((count) => count !== expectedSuites)
+  if (wrong.length > 0) {
+    throw new Error(
+      `the README states ${wrong.join(' and ')} suites; the runner runs ${expectedSuites} `
+      + `(${runnerSuites} test suites and the policy self-check)`,
+    )
+  }
+  return true
+})
+check('inventory: the README calls the policy self-check the last step of the runner', () => {
+  const ordinal = /The\s+(\w+)\s+step\s+is\s+the\s+policy\s+self-check/.exec(readme)
+  if (ordinal === null) throw new Error('the README does not call the policy self-check the last step')
+  const number = STEP_ORDINALS[ordinal[1].toLowerCase()]
+  if (number === undefined) throw new Error(`the README calls the last step "${ordinal[1]}", which names no number`)
+  if (number !== expectedSuites) {
+    throw new Error(`the README calls the policy self-check step ${number}; it is step ${expectedSuites}`)
+  }
+  return true
+})
+
 // The language files word their section titles in their own language, so the
 // README may not claim that they carry the same titles, and it must name the
 // ones that differ: a reader who looks for the section the README names finds

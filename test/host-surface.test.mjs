@@ -249,6 +249,69 @@ check(
   'the note states the per-call authorization review under the Auto preset',
   /per-call\s+LLM\s+authorization\s+review/.test(note) && /\*\*Auto\*\*\s+permission\s+preset/.test(note),
 )
+// The note makes the same claim in two places: once in the surface map, once
+// in the block that explains the host's review path. Two statements about one
+// fact drift apart, and the checks above read each of them on its own — a note
+// that says both things at once passes every one of them.
+//
+// So the two regions are compared. Each is reduced to three facts: does it
+// claim that a review command, or a tool exposing one, exists here; does it
+// say that none does; and does it name the per-call authorization review. The
+// facts have to agree, and the block has to assert the truth. A map row that
+// claims a review command exists next to a block that says none does is a note
+// that contradicts itself, and the check names the fact they disagree on.
+const REVIEW_NEGATION = /\b(no|not|never|nothing|none|neither|nor|without|unavailable|absent)\b/i
+const REVIEW_EXISTENCE = /\b(exists?|exposed|exposes|provided|provides|offered|offers|ships?|has|have)\b/i
+const reviewClauses = (text) => text.split(/[,;:]/).map((clause) => clause.trim()).filter(Boolean)
+const claimsReviewCommand = (text) => reviewClauses(text).some((clause) =>
+  !REVIEW_NEGATION.test(clause)
+  && REVIEW_EXISTENCE.test(clause)
+  && /\b(review|judge)\b/i.test(clause)
+  && /\b(command|tool)\b/i.test(clause))
+const saysNoReviewCommand = (text) =>
+  /\bno\b[^.]{0,120}\b(command|tool)\b/i.test(text)
+  || /\b(do|does)\s+not\s+exist\b/i.test(text)
+  || /\bunavailable\b/i.test(text)
+const saysPerCallReview = (text) =>
+  /per-call[^.]{0,160}(authorization|auth)[^.]{0,60}review/i.test(text)
+  || /per-call[^.]{0,80}review/i.test(text)
+const reviewFacts = (text) => [
+  claimsReviewCommand(text),
+  saysNoReviewCommand(text),
+  saysPerCallReview(text),
+]
+const mapRow = note.split(/\r?\n/).find((line) => line.startsWith('|') && /autoreview/i.test(line))
+const verificationHeading = note.indexOf('## Independent verification on this host')
+const verificationBlock = verificationHeading < 0
+  ? ''
+  : note.slice(verificationHeading).split(/\r?\n##\s/)[0]
+// The two regions are reduced to three facts each and the facts have to
+// agree. The check is written in this file's idiom: a boolean and a detail
+// string, not a throwing function — a function passed here is truthy, so it
+// would pass every time and prove nothing.
+const reviewDisagreement = (() => {
+  if (mapRow === undefined) return 'the note has no surface-map row about the review commands'
+  if (verificationBlock === '') return 'the note has no "Independent verification on this host" block'
+  const claim = mapRow.split('|').slice(2).join('|')
+  const rowFacts = reviewFacts(claim)
+  const blockFacts = reviewFacts(verificationBlock)
+  const names = ['a review command exists here', 'no review command exists here', 'the per-call authorization review is named']
+  for (let index = 0; index < rowFacts.length; index += 1) {
+    if (rowFacts[index] !== blockFacts[index]) {
+      return `the surface map ${rowFacts[index] ? 'claims' : 'does not claim'} ${names[index]}, `
+        + `the verification block ${blockFacts[index] ? 'claims' : 'does not claim'} ${names[index]}`
+    }
+  }
+  if (blockFacts[0]) return 'the note claims that a review command exists on this host'
+  if (!blockFacts[1]) return 'the note does not say that no review command exists on this host'
+  if (!blockFacts[2]) return 'the note does not name the per-call authorization review'
+  return ''
+})()
+check(
+  'the note\'s surface map and its verification block agree about the review command',
+  reviewDisagreement === '',
+  reviewDisagreement,
+)
 check('the note names the /swarm command', /`\/swarm`/.test(note))
 const bundleIndex = readFileSync(join(bundleRoot, 'index.js'), 'utf8')
 check(

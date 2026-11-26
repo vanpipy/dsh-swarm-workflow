@@ -226,8 +226,10 @@ const CAPABILITY_TTL_MS = 5000
  * The surfaces the swarm workflow can use, grouped as the prompt shows them.
  * Each entry names the tool that proves the surface exists in this host.
  *
- * Every surface the runtime note names is listed here, so the block either
- * reports it or names it absent. A surface that the note claims in prose and
+ * Every surface the note's coordinator list names is listed here, so the block
+ * either reports it or names it absent. The note also names the host's wider
+ * tool inventory, and those tools are the note's own prose, not the swarm
+ * surfaces the block reports on. A surface that the note claims in prose and
  * the block never probes is a claim that decays silently.
  */
 export const CAPABILITY_GROUPS = [
