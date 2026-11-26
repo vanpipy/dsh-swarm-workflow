@@ -43,12 +43,15 @@ const skill = read('skills/swarm-engineering/swarm-engineering.md')
  * `list_subagent_models` is in the list because the host ships the model
  * listing even though a session registers it only when its tool bundle
  * carries it, and the note gates that bullet on it.
+ * The list also carries every surface the live capability block probes, so a
+ * full host prints no absent line.
  */
 const ALL = [
   'subagent', 'subagent_fork', 'workflow', 'spawn_teammate', 'send_message', 'interrupt_agent',
   'list_agents', 'list_subagent_models', 'wait_agent', 'team_task_create', 'team_task_get', 'team_task_list',
   'team_task_update', 'create_goal', 'get_goal', 'update_goal', 'todo_write',
-  'ask_user_question', 'schedule_create', 'job_output', 'job_kill', 'job_list', 'skill',
+  'ask_user_question', 'schedule_create', 'schedule_list', 'schedule_update', 'schedule_delete',
+  'job_output', 'job_kill', 'job_list', 'skill',
   // The plugin registers these three itself, so a live host has them in the
   // registry the moment the bundle is applied.
   'swarm_worktree', 'swarm_task', 'swarm_child',

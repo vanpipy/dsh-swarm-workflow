@@ -38,6 +38,9 @@ const suites = [
   'verbatim.test.mjs',
   'skill-stamp.test.mjs',
   'encoding.test.mjs',
+  'capability-probe.test.mjs',
+  'client-registration.test.mjs',
+  'host-surface.test.mjs',
 ]
 
 /** The prefix a suite prints the checks it executed behind. */

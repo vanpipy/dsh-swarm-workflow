@@ -28,8 +28,10 @@ named. Everywhere else the shipped text stays authoritative.
 ## Host identity
 
 This host is DeepSeek Harness (DSH). It is not Jcode. The plugin runs as a DSH
-bundle and contributes a system-prompt section, a skill and three
-pass-through primitives.
+bundle and contributes a system-prompt section, ten skills and three
+pass-through primitives. The ten skills are the role methods this bundle
+registers under the name `swarm-engineering` and the nine craft skills listed
+below, one per role and one per language it carries pieces for.
 
 The global execution policy is not injected by the harness here. This plugin
 injects `prompt-overlay.md` itself: the whole policy into the Coordinator's
@@ -37,6 +39,12 @@ prompt, and sections 1 to 11 into every worker's prompt, because the policy
 governs delegated work as well as direct work. Section 12, Swarm
 Orchestration, is the Coordinator's operating manual and stays with the
 Coordinator.
+
+The claims this note makes about what this host does not have are scoped to
+the host packages that were read for it. The host ships its surfaces from
+packages under its own namespace, and this note does not chase the ones that
+were not read: where a claim below carries that scope, it names what was not
+read.
 
 `swarm-prompt.md` was the reference runtime's `swarm` tool description. This
 host has no `swarm` tool. The file is the Coordinator's delegation briefing,
@@ -46,6 +54,45 @@ mechanics, the fields a brief must carry, and the Coordinator's own bounds.
 The root agent is the Coordinator. The host calls that same agent the Team Lead
 in its own tool descriptions, so the two names are one role: the agent that owns
 the team and the delegation.
+
+<!-- swarm:note coordinator worker -->
+## The host's model-facing tools
+
+The swarm itself is built on a narrow set of surfaces; the host's own
+model-facing tools are wider, so they are named here as well. A name here means
+the host ships that tool, not that this session registers it: a session carries
+only the tool bundles it was given.
+
+- Files and search: `read`, `write`, `edit`, `read_image`, `glob`, `grep`
+- The machine: `pwsh`, `bash`, `working_directory`, `load_workspace_dependencies`
+- The web: `web_search`, `web_fetch`
+- MCP resources: `list_mcp_resources`, `list_mcp_resource_templates`, `read_mcp_resource`
+- Reminders: `schedule_create`, `schedule_list`, `schedule_update`, `schedule_delete`
+- The plan mode: `exit_plan_mode`
+- The host's own worktree tool: `create_worktree` — this bundle ships
+  `swarm_worktree` beside it, and the bundle that carries `create_worktree` is
+  not installed in this profile
+- Declaring a file as a deliverable: `present`
+- Loading a skill: `skill` — the host's own loader; this bundle registers the
+  skills this note lists below, and a lane loads one by name
+- A script that fans work out across the host's own agents: `run_code`
+- The host's plugin registry: `plugin_manager`, `plugin_market`
+- The host's own service inspector: `cordis_inspect_list`, `cordis_inspect_query`
+
+Three of the tools the swarm uses are this bundle's own, not host surfaces:
+`swarm_task`, `swarm_child` and `swarm_worktree`. The host's own services sit
+behind the tools above: the goal service behind `create_goal`, the job service
+behind `job_output`, the workflow engine behind the `workflow` tool, and the
+MCP resource service behind the MCP resources above. The MCP client that
+reaches external servers is not installed in this profile, and the session
+query service is installed without the tool bundle that exposes it, so the
+session search has no tool here. The client half of this bundle draws a glyph
+into the conversation composer's dock; the host's own client surfaces were not
+read for this note and are not named here.
+
+This bundle registers one command of its own: `/swarm` prints the live
+capability block on demand, without spending a model turn. The host's own
+commands are registered by its own bundles, not by this one.
 
 <!-- swarm:note coordinator skill -->
 ## Surface map: Jcode to DeepSeek Harness
@@ -66,16 +113,16 @@ surface that is absent there must not be planned around.
 | `swarm await_members` | the host notifies you when a child finishes; `wait_agent` waits for the next teammate status, message or task change; `job_output` with `wait: true` collects a background job. Never poll with sleeps — that rule is unchanged. |
 | `swarm list` | `list_agents` lists the durable teammates and their availability; `swarm_child` with `action: list` lists your own child lanes; `team_task_list`, or `swarm_task` with `action: list`, reads the shared board. The rule it carried — watch a lane instead of only waiting for it — holds unchanged. |
 | `swarm message` | `send_message` addresses a native teammate by name and steers a running target at its nearest step boundary; `swarm_child` with `action: steer` addresses a child lane by its id. A successful send does not mean the recipient has processed it, so the rule against repeating a message that was ignored still holds. |
-| `swarm stop` | `swarm_child` with `action: stop` stops a child lane; `interrupt_agent` interrupts a native teammate's turn and keeps its inbox. There is no force variant here, so the rule that force is reserved for a session this coordinator did not spawn has no counterpart: nothing on this host needs it. Stopping loses the unwritten remainder either way. |
-| `swarm summary` | no counterpart here. `job_output` reads a background job's output and a native teammate's transcript lives on disk; neither reports a lane's recent tool calls directly. |
+| `swarm stop` | `swarm_child` with `action: stop` stops a child lane; `interrupt_agent` interrupts a native teammate's turn and keeps its inbox. There is no force variant here, so the rule that force is reserved for a session this coordinator did not spawn has no counterpart: nothing on this host needs it. Stopping loses the unwritten remainder either way. The claim is scoped to the host packages read for this note. |
+| `swarm summary` | no counterpart here. `job_output` reads a background job's output and a native teammate's transcript lives on disk; neither reports a lane's recent tool calls directly. The claim is scoped to the host packages read for this note. |
 | no counterpart in the canonical text | `job_kill` — requests the cancellation of a running background job: it takes the job id and an optional reason, and the reason is recorded in the log and forwarded to the job. |
 | `[agents] swarm_stall_after_secs`, `[agents] swarm_stall_nudge` | no such setting here. `wait_agent` with a timeout, then `interrupt_agent` or `swarm_child` with `stop`, is the stall path. |
-| `/autoreview`, `/autojudge`, `/review`, `/judge`, `[autoreview] enabled`, `[autojudge] enabled` | no such command exists here and no tool exposes one to a model; the session flags have no counterpart either, so a flag that reads "enabled" can never mean a review ran. See "Independent verification on this host" below. |
-| the Jcode CLI (`jcode run`, `jcode ambient run-visible`) | no counterpart here: this host is DeepSeek Harness, and the bundle ships no headless-run command of its own. The sentences that name these describe another runtime's turn path — there is nothing for a lane to run, and no local turn path for an end-of-turn trigger to fire on. |
+| `/autoreview`, `/autojudge`, `/review`, `/judge`, `[autoreview] enabled`, `[autojudge] enabled` | no such command exists here and no tool exposes one to a model; the session flags have no counterpart either, so a flag that reads "enabled" can never mean a review ran. What this host does ship is a per-call authorization review, and the switch is the permission preset, not a flag. See "Independent verification on this host" below. |
+| the Jcode CLI (`jcode run`, `jcode ambient run-visible`) | no counterpart here: this host is DeepSeek Harness, and the bundle ships no headless-run command of its own. The sentences that name these describe another runtime's turn path — there is nothing for a lane to run, and no local turn path for an end-of-turn trigger to fire on. The claim is scoped to the host packages read for this note: the host's turn loop was not read. |
 | the todo lane, its `details` field, the requirement id | the shared board: `team_task_create` returns a task id and the task `description` carries the requirement block. See "Requirement handover on this host" below. |
-| the server-level swarm plan | the shared board plus the `todo_write` ledger. This host has no separate plan object. |
+| the server-level swarm plan | the shared board plus the `todo_write` ledger. This host has no separate plan object: no plan service was seen in the host packages read for this note. |
 | `~/.jcode/swarm-prompt.md`, `./.jcode/swarm-prompt.md`, `config.toml` | no such path exists here. This bundle's markdown files are the shipped text, and the host's own settings live in the DSH profile. |
-| the global execution policy injected by the harness | injected by this plugin — see "Host identity" above. |
+| the global execution policy injected by the harness | injected by this plugin — see "Host identity" above, where the claim carries its scope. |
 
 <!-- swarm:note coordinator worker skill -->
 ## Requirement handover on this host
@@ -133,7 +180,11 @@ whose file cannot be read is `not demonstrated`, never `met`.
 
 This host has no native review or judge command. `/autoreview`, `/autojudge`,
 `/review` and `/judge` do not exist here, and no tool exposes them to a
-model, so the native-reviewer path of the shipped text is unavailable.
+model, so the native-reviewer path of the shipped text is unavailable. What
+the host does ship is a per-call LLM authorization review: before a tool call
+runs, an authorization check decides whether the call is allowed, and it runs
+under the **Auto** permission preset. The switch is that preset, not a flag
+that reads "enabled", and it is not a review a lane can start on demand.
 
 The rule that path served still holds, in the form this host supports:
 
@@ -221,12 +272,12 @@ The surfaces this host offers, and the Jcode surface each one replaces:
 - `todo_write` — the round ledger: one row per round. <!-- swarm:requires todo_write -->
 - `create_goal`, `get_goal`, `update_goal` — the session goal, which is your own persistence across continuation rounds. <!-- swarm:requires create_goal -->
 - `wait_agent`, `list_agents`, `send_message`, `interrupt_agent` — the native team. Two `send_message` families share the name: yours addresses a native teammate by name, while a delegated worker's addresses a continuable child by its agent id. <!-- swarm:requires wait_agent -->
-- `swarm_task` — the shared board in one call: read it, claim it, move it. <!-- swarm:requires swarm_task -->
-- `swarm_child` — your own child lanes: list, steer, stop. <!-- swarm:requires swarm_child -->
+- `swarm_task` — **this bundle's own tool, not a host surface** — the shared board in one call: read it, claim it, move it. <!-- swarm:requires swarm_task -->
+- `swarm_child` — **this bundle's own tool, not a host surface** — your own child lanes: list, steer, stop. <!-- swarm:requires swarm_child -->
 - `job_output` — reads a background job: the output since the previous read for a stream job, or the result of a finished final-output job. <!-- swarm:requires job_output -->
 - `job_kill` — requests the cancellation of a running background job: it takes the job id and an optional reason, and the reason is recorded in the log and forwarded to the job. No Jcode surface maps to it. <!-- swarm:requires job_kill -->
 - `job_list` — lists the background jobs this session started, with their ids, their kinds and their statuses. <!-- swarm:requires job_list -->
-- `swarm_worktree` — a retained Git worktree, so a lane gets files of its own instead of editing a shared tree. <!-- swarm:requires swarm_worktree -->
+- `swarm_worktree` — **this bundle's own tool, not a host surface** — a retained Git worktree, so a lane gets files of its own instead of editing a shared tree. <!-- swarm:requires swarm_worktree -->
 - `ask_user_question` — put an open product decision in front of the human before you delegate it. <!-- swarm:requires ask_user_question -->
 - `.swarm/` in the workspace of the work item — where the requirement set, the decisions and the lane reports are written. Write the requirement file before you dispatch the first lane.
 - The craft guidance every lane works by, registered as a skill so a brief can name it: `swarm-craft-shared`, `swarm-craft-developer`, `swarm-craft-tester`, `swarm-craft-reviewer`, and one skill per language — `swarm-craft-python`, `swarm-craft-java`, `swarm-craft-go`, `swarm-craft-typescript` and `swarm-craft-rust` — the files behind them are `{{swarm:shared}}`, `{{swarm:developer}}`, `{{swarm:tester}}`, `{{swarm:reviewer}}`, `{{swarm:python}}`, `{{swarm:java}}`, `{{swarm:go}}`, `{{swarm:typescript}}` and `{{swarm:rust}}`. The language piece a brief names is the one for the language in play.

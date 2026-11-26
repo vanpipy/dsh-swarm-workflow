@@ -225,8 +225,12 @@ const CAPABILITY_TTL_MS = 5000
 /**
  * The surfaces the swarm workflow can use, grouped as the prompt shows them.
  * Each entry names the tool that proves the surface exists in this host.
+ *
+ * Every surface the runtime note names is listed here, so the block either
+ * reports it or names it absent. A surface that the note claims in prose and
+ * the block never probes is a claim that decays silently.
  */
-const CAPABILITY_GROUPS = [
+export const CAPABILITY_GROUPS = [
   {
     group: 'Delegation',
     items: [
@@ -237,13 +241,59 @@ const CAPABILITY_GROUPS = [
     ],
   },
   {
+    group: 'Team roster',
+    items: [
+      { tool: 'list_agents', text: 'the lead and every teammate (`list_agents`)' },
+      { tool: 'wait_agent', text: 'wait for a teammate status or message (`wait_agent`)' },
+      { tool: 'send_message', text: 'message a teammate (`send_message`)' },
+      { tool: 'interrupt_agent', text: 'interrupt a teammate turn (`interrupt_agent`)' },
+    ],
+  },
+  {
+    group: 'Shared board',
+    items: [
+      { tool: 'team_task_create', text: 'create a task (`team_task_create`)' },
+      { tool: 'team_task_get', text: 'read a task (`team_task_get`)' },
+      { tool: 'team_task_list', text: 'list tasks (`team_task_list`)' },
+      { tool: 'team_task_update', text: 'move a task (`team_task_update`)' },
+    ],
+  },
+  {
+    group: 'Session goal',
+    items: [
+      { tool: 'create_goal', text: 'the objective (`create_goal`)' },
+      { tool: 'get_goal', text: 'read it (`get_goal`)' },
+      { tool: 'update_goal', text: 'update it (`update_goal`)' },
+    ],
+  },
+  {
+    group: 'Background jobs',
+    items: [
+      { tool: 'job_output', text: 'read a job (`job_output`)' },
+      { tool: 'job_list', text: 'list jobs (`job_list`)' },
+      { tool: 'job_kill', text: 'cancel a job (`job_kill`)' },
+    ],
+  },
+  {
+    group: 'Reminders',
+    items: [
+      { tool: 'schedule_create', text: 'set one (`schedule_create`)' },
+      { tool: 'schedule_list', text: 'list them (`schedule_list`)' },
+      { tool: 'schedule_update', text: 'move one (`schedule_update`)' },
+      { tool: 'schedule_delete', text: 'drop one (`schedule_delete`)' },
+    ],
+  },
+  {
     group: 'Coordination',
     items: [
-      { tool: 'team_task_create', text: 'shared task board (`team_task_create`)' },
-      { tool: 'create_goal', text: 'session goal (`create_goal`)' },
       { tool: 'todo_write', text: 'round ledger (`todo_write`)' },
       { tool: 'ask_user_question', text: 'ask the human (`ask_user_question`)' },
-      { tool: 'schedule_create', text: 'reminders (`schedule_create`)' },
+    ],
+  },
+  {
+    group: 'Model listing',
+    items: [
+      { tool: 'list_subagent_models', text: 'the routes a subagent may use (`list_subagent_models`)' },
     ],
   },
 ]
@@ -654,13 +704,17 @@ function probeToolNames(ctx, context) {
 
 /**
  * The live capability block: what this session can actually call.
+ *
+ * Exported so the suite can drive it with a fake registry: what the block
+ * claims is a claim about the registry, so the check drives the block itself
+ * instead of reading a rendering of it.
  * @param {string[] | undefined} names - the visible tool names.
  * @param {object} options - rendering options.
  * @param {boolean} options.command - whether the `/swarm` command is registered.
  * @param {string[]} options.referenced - tools named by a prompt marker.
  * @returns {string} the block.
  */
-function capabilityBlock(names, options = {}) {
+export function capabilityBlock(names, options = {}) {
   if (names === undefined) {
     return [
       '## Host capabilities — not probed',

@@ -344,7 +344,7 @@ npm test
 
 The runner starts every suite in its own process and exits non-zero when one
 fails, and its last line names how many suites ran and how many checks they
-made (`ALL SUITES PASSED (8 suites, N checks)`). The suites under `test/` cover
+made (`ALL SUITES PASSED (11 suites, N checks)`). The suites under `test/` cover
 the prompt composition and gating (`render-prompt.test.mjs`), the three
 primitives against stub host services (`swarm-tools.test.mjs`), the parsing and
 registration timing (`gating.test.mjs`), the verbatim guarantee — that the
@@ -356,9 +356,15 @@ resolved where the bundle lives, that each craft file is registered as a skill
 of its own, and that a CRLF checkout still composes (`method.test.mjs`), and
 the encoding of the shipped text — that every text file is valid UTF-8 and that
 no replacement character or mojibake signature survived outside the historical
-quotes under `docs/validation/` (`encoding.test.mjs`). The eighth step is the
-policy self-check, which compares the bundle against its own record and needs
-no canonical repository. The method suite also reads the craft files
+quotes under `docs/validation/` (`encoding.test.mjs`), the live capability block
+— that every surface the note names is probed, reported present or named absent
+(`capability-probe.test.mjs`), the client half — that it registers the board as
+a tool view keyed by the plugin's own wire tool name and that the dock entry
+carries a label (`client-registration.test.mjs`), and the host's own tool
+inventory — that the note names every model-facing tool the host ships, or
+lists the ones it does not with a reason (`host-surface.test.mjs`). The eleventh
+step is the policy self-check, which compares the bundle against its own record
+and needs no canonical repository. The method suite also reads the craft files
 themselves: it asserts that each of the nine still carries the sections its
 design names — the three checks and the twelve shared pieces in the shared
 craft, and the nineteen numbered sections each language file carries, which are
