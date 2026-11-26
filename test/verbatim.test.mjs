@@ -16,6 +16,8 @@
 //   - runtime-note.md stops being the host note, or stops being the only
 //     shipped file that carries plugin markers,
 //   - a shipped file loses one of the anchors the plugin composes from.
+//   - the delegation briefing loses one of the fields of the brief contract
+//     it states.
 //
 // The scope is the four files the plugin composes from. README.md is the
 // bundle's documentation and shows the marker syntax on purpose, so it is not
@@ -161,6 +163,64 @@ const JCODE_TOKENS = [
 for (const name of USER_FILES) {
   const hit = JCODE_TOKENS.find((pattern) => pattern.test(texts[name]))
   check(`${name}: names no Jcode surface`, hit === undefined)
+}
+
+// --- 7. The briefing keeps every field of the brief contract it states -------
+// The briefing states the brief contract as a list: the paragraph "What every
+// brief must carry." is followed by one bullet per field, each label bolded
+// ("- **Target list.** ..."). The check reads that list and requires the eleven
+// labels, in the order the briefing lists them.
+//
+// The list is the scope on purpose. A check that grepped the whole file for the
+// words "target list", "evidence budget" and "stop condition" would be
+// satisfied by the closing sentence under the list ("A brief without a target
+// list, an evidence budget, or a stop condition is not ready to dispatch."),
+// which names three of the fields in prose and is pinned by its own anchor
+// above. A briefing that dropped a field would pass such a grep. This check
+// reads the bold labels of the contract's own bullets, so a missing bullet is a
+// missing label and the closing sentence cannot stand in for one.
+const BRIEF_CONTRACT_FIELDS = [
+  'Role and objective',
+  'Scope and out of scope',
+  'Context and known evidence',
+  'Acceptance criteria',
+  'Validation',
+  'Ownership',
+  'Dependencies',
+  'Report contract',
+  'Target list',
+  'Evidence budget',
+  'Stop condition',
+]
+{
+  const lines = brief.split(/\r?\n/)
+  const contractAt = lines.findIndex((line) => line.startsWith('What every brief must carry.'))
+  const fields = []
+  if (contractAt !== -1) {
+    for (const line of lines.slice(contractAt + 1)) {
+      if (line.trim() === '') continue
+      const bullet = /^-\s+\*\*([^*]+?)\.\*\*/.exec(line)
+      if (bullet !== null) { fields.push(bullet[1]); continue }
+      if (/^\s/.test(line)) continue // a continuation line of the bullet above
+      // The contract paragraph wraps over two lines, so the scan may only stop
+      // once the list has started: the line that ends it is the closing
+      // sentence under the last bullet.
+      if (fields.length > 0) break
+    }
+  }
+  const missing = BRIEF_CONTRACT_FIELDS.filter((field) => !fields.includes(field))
+  const unexpected = fields.filter((field) => !BRIEF_CONTRACT_FIELDS.includes(field))
+  const inOrder = fields.length === BRIEF_CONTRACT_FIELDS.length &&
+    fields.every((field, index) => field === BRIEF_CONTRACT_FIELDS[index])
+  const why = contractAt === -1
+    ? 'the contract paragraph is gone'
+    : [
+      missing.length > 0 ? `missing ${missing.join(', ')}` : '',
+      unexpected.length > 0 ? `unexpected ${unexpected.join(', ')}` : '',
+      !inOrder && missing.length === 0 && unexpected.length === 0 ? 'the fields are out of order' : '',
+    ].filter((part) => part !== '').join('; ')
+  check(`${BRIEF}: keeps every field of the brief contract${why === '' ? '' : ` (${why})`}`,
+    contractAt !== -1 && missing.length === 0 && unexpected.length === 0 && inOrder)
 }
 
 console.log(`SUITE CHECKS: ${checks}`)

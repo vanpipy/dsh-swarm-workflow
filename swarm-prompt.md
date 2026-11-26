@@ -9,10 +9,12 @@ There is no override path here: the bundle markdown IS the shipped text.
 
 Model routing. `subagent` takes `provider` and `model` for the worker it
 starts, and `reasoning_effort` beside them. `list_subagent_models` lists the
-providers and models available here. An omitted provider or model falls back
+providers and models available here. The host ships that listing, but a
+session registers it only when its tool bundle carries it, so the live
+capability block in the runtime note decides whether you can call it. An
+omitted provider or model falls back
 to the child's default, and a model change never reaches a lane that is
-already running. There is no session-wide model setting here and no
-model-listing command: `list_subagent_models` is the list.
+already running. There is no session-wide model setting here.
 
 What to spawn workers for:
 

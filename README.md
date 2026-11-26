@@ -327,6 +327,8 @@ skills/swarm-engineering/reviewer.md the reviewer's craft (the plugin's prose)
 skills/swarm-engineering/languages/  the language pieces, one file per language (python, java, go, typescript, rust)
 cordis.patch.yml              the profile row (id: swarm-workflow)
 client.js, locale/, icon.svg  the Web-GUI side
+package.json                   the manifest: the name, the version, and the `files` allowlist that decides what ships
+README.md                     this file: what the bundle does, how it is installed, and how it is checked
 test/                         the suite that travels with the bundle
 tools/                         the drift guard: the section-by-section checker and its Node wrapper
 docs/host-adaptation.md       the record of every passage of the shipped text adapted to this host, with its reason

@@ -74,11 +74,11 @@ tests, the budget applies only to the investigation phase.
 waiting on a lane, and writing a ledger row or a board task do not consume the
 read budget.  On this host the delegation and coordination surfaces are the
 following, and none of them draws on the read budget:  `subagent` ,
-`subagent_fork` ,  `workflow` ,  `spawn_teammate` ,  `send_message` ,
-`swarm_child` ,  `wait_agent` ,  `list_agents` ,  `interrupt_agent` ,
-`job_output` ,  `job_kill` ,  `job_list` ,  `todo_write` ,  `create_goal` ,
-`get_goal` ,  `update_goal` ,  `ask_user_question` ,  `swarm_task` ,
-`swarm_worktree` ,  and
+`subagent_fork` ,  `workflow` ,  `spawn_teammate` ,  `list_subagent_models` ,
+`send_message` ,  `swarm_child` ,  `wait_agent` ,  `list_agents` ,
+`interrupt_agent` ,  `job_output` ,  `job_kill` ,  `job_list` ,  `todo_write` ,
+`create_goal` ,  `get_goal` ,  `update_goal` ,  `ask_user_question` ,
+`swarm_task` ,  `swarm_worktree` ,  and
 the shared board's  `team_task_create` ,  `team_task_get` ,  `team_task_list` ,
 `team_task_update` ; a delegated lane's own tool calls count against that
 lane's budget, not the coordinator's.

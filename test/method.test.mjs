@@ -925,6 +925,160 @@ check('inventory: the paths the package names exist on disk', () => {
   return true
 })
 
+// --- 11. the skill core's structure and its handover format are guarded -------
+// F-01 and F-02: the skill core's numbered sections and its handover format
+// had no shipped guard, so a section that was removed, renumbered or
+// duplicated, or a handover label that was renamed, left every suite green.
+//
+// The skill core ships no table of contents, so what "complete" means for
+// this file is stated here and enforced exactly:
+//
+//   1. a numbered section is a level 2 to 6 heading whose title starts with a
+//      number path ("9", "2.3.1"); a hash inside a fenced code block is an
+//      example, not a section;
+//   2. the top-level numbers are the contiguous sequence 1..N in the order the
+//      headings appear: a removed section leaves a gap, and a swapped pair
+//      breaks the order;
+//   3. under every parent, the child numbers are the contiguous sequence
+//      1..k in the order they appear;
+//   4. no number path names two sections, and no parent holds two children
+//      with the same title;
+//   5. every numbered section has its parent, so a removed parent cannot leave
+//      orphans behind.
+//
+// The handover format is the block section 13 gives as the format: the
+// requirement line, then the check label, then the source label, in that
+// order.  The block is found by its labels rather than by a line number, so
+// the check reads the file as shipped.
+const skillCoreFile = fileURLToPath(new URL('../skills/swarm-engineering/swarm-engineering.md', import.meta.url))
+const skillCoreText = existsSync(skillCoreFile) ? readFileSync(skillCoreFile, 'utf8') : ''
+
+// The sections of the skill core, with the fenced code blocks kept apart.
+const skillCoreSections = (text) => {
+  const sections = []
+  let current = null
+  let fence = null
+  for (const line of text.split(/\r?\n/)) {
+    if (/^\s*```/.test(line)) {
+      if (fence === null) {
+        fence = { lines: [line] }
+        if (current !== null) current.fences.push(fence)
+      } else {
+        fence.lines.push(line)
+        fence = null
+      }
+      continue
+    }
+    const heading = /^(#{2,6})\s+(.+?)\s*$/.exec(line)
+    if (fence === null && heading !== null) {
+      current = { level: heading[1].length, title: heading[2], fences: [] }
+      sections.push(current)
+      continue
+    }
+    if (fence !== null) fence.lines.push(line)
+  }
+  return sections
+}
+
+const NUMBERED_SECTION = /^(\d+(?:\.\d+)*)\.?\s+(.+)$/
+const skillCoreHeadings = skillCoreSections(skillCoreText)
+const numberedSections = skillCoreHeadings
+  .map((heading, index) => {
+    const numbered = NUMBERED_SECTION.exec(heading.title)
+    return numbered === null ? null : { index, level: heading.level, number: numbered[1], name: numbered[2] }
+  })
+  .filter((section) => section !== null)
+
+// The parent of each heading is the nearest heading above it; two children of
+// the same parent that carry the same title are the same section twice.
+const parentOfHeading = skillCoreHeadings.map((heading, index) => {
+  for (let at = index - 1; at >= 0; at -= 1) {
+    if (skillCoreHeadings[at].level < heading.level) return at
+  }
+  return -1
+})
+
+check('inventory: the numbered sections of the skill core are complete, in order and unique', () => {
+  if (skillCoreText === '') throw new Error('the skill core file is missing or empty')
+  if (numberedSections.length === 0) throw new Error('the skill core has no numbered section')
+
+  const topLevel = numberedSections.filter((section) => section.number.split('.').length === 1)
+  const topNumbers = topLevel.map((section) => Number(section.number))
+  const repeated = topNumbers.filter((number, at) => topNumbers.indexOf(number) !== at)
+  if (repeated.length > 0) {
+    throw new Error(`the section number ${[...new Set(repeated)].join(', ')} names more than one section`)
+  }
+  const contiguous = topNumbers.map((_, at) => at + 1)
+  if (topNumbers.join(',') !== contiguous.join(',')) {
+    const gap = contiguous.find((number) => !topNumbers.includes(number))
+    if (gap !== undefined) {
+      throw new Error(`the top-level sections skip ${gap}: they run ${topNumbers.join(', ')}`)
+    }
+    throw new Error(`the top-level sections are not in number order: ${topNumbers.join(', ')}`)
+  }
+
+  const children = new Map()
+  for (const section of numberedSections) {
+    const parts = section.number.split('.')
+    if (parts.length < 2) continue
+    const parent = parts.slice(0, -1).join('.')
+    if (!children.has(parent)) children.set(parent, [])
+    children.get(parent).push(Number(parts[parts.length - 1]))
+  }
+  for (const [parent, numbers] of children) {
+    const expected = numbers.map((_, at) => at + 1)
+    if (numbers.join(',') !== expected.join(',')) {
+      throw new Error(`the sections under ${parent} are not the contiguous sequence 1..${numbers.length}: ${numbers.join(', ')}`)
+    }
+  }
+
+  const paths = new Set()
+  for (const section of numberedSections) {
+    if (paths.has(section.number)) throw new Error(`the section number ${section.number} names more than one section`)
+    paths.add(section.number)
+  }
+  for (const section of numberedSections) {
+    const parts = section.number.split('.')
+    if (parts.length < 2) continue
+    const parent = parts.slice(0, -1).join('.')
+    if (!paths.has(parent)) throw new Error(`the section ${section.number} has no parent section ${parent}`)
+  }
+
+  const seen = new Map()
+  for (const [index, heading] of skillCoreHeadings.entries()) {
+    const key = JSON.stringify([parentOfHeading[index], heading.title])
+    if (seen.has(key)) throw new Error(`"${heading.title}" appears twice under the same parent`)
+    seen.set(key, heading)
+  }
+  return true
+})
+
+const handoverSection = skillCoreHeadings.find((heading) => /^13\.\s/.test(heading.title))
+
+check('inventory: the handover section states the format the skill mandates', () => {
+  if (handoverSection === undefined) throw new Error('the skill core has no section 13')
+  const candidates = handoverSection.fences.filter((fence) =>
+    fence.lines.some((line) => /^\s*(check|source):/.test(line)))
+  if (candidates.length === 0) {
+    throw new Error('the handover section states no format block with the check and source labels')
+  }
+  for (const fence of candidates) {
+    const content = fence.lines.map((line) => line.trim()).filter((line) => !/^`{3,}/.test(line))
+    const checkAt = content.findIndex((line) => line.startsWith('check:'))
+    const sourceAt = content.findIndex((line) => line.startsWith('source:'))
+    if (checkAt === -1) throw new Error('the handover format block does not state: check:')
+    if (sourceAt === -1) throw new Error('the handover format block does not state: source:')
+    if (sourceAt < checkAt) throw new Error('the handover format block states source: before check:')
+    const requirement = content
+      .slice(0, checkAt)
+      .filter((line) => line !== '' && !line.startsWith('check:') && !line.startsWith('source:'))
+    if (requirement.length === 0) {
+      throw new Error('the handover format block states no requirement line before the check label')
+    }
+  }
+  return true
+})
+
 console.log(`SUITE CHECKS: ${checks}`)
 console.log(failures === 0 ? 'ALL CHECKS PASSED' : `${failures} CHECK(S) FAILED`)
 process.exit(failures === 0 ? 0 : 1)

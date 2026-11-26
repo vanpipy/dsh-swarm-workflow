@@ -363,6 +363,91 @@ async function scenarios(makeHost, label) {
     }
   }
 
+  // --- M: the host refuses the /swarm command --------------------------------
+  // A host can refuse a command the way it can refuse a tool or a skill: the
+  // registry throws. The bundle then owes four things, and this scenario holds
+  // it to all four. The command stays unregistered, the prompt still composes
+  // and never advertises a command that is not there, the refusal is reported
+  // by name, and a refusal that keeps happening is reported once.
+  {
+    const registered = []
+    const sections = []
+    const attempts = []
+    const warnings = []
+    const originalWarn = console.warn
+    console.warn = (...args) => { warnings.push(args.map((arg) => String(arg)).join(' ')) }
+    try {
+      const ctx = makeHost(registered, sections)
+      ctx.provide('agentTeams', teams)
+      ctx.provide('worktrees', worktrees)
+      ctx.provide('subagents', subagents)
+      ctx.provide('commands', {
+        register: () => {
+          attempts.push('swarm')
+          throw new Error('this host refuses the swarm command')
+        },
+      })
+      ctx.plugin({ inject: bundle.inject, apply: bundle.apply })
+      await tick()
+      const section = sections[0]
+      const prompt = section.text({ agent: { id: 'a1' } })
+      await tick()
+      // The command is asked for again on the next render: a host that refuses
+      // it may have been busy. The refusal is still one refusal.
+      section.text({ agent: { id: 'a1' } })
+      await tick()
+      const reports = () => warnings.filter((line) => line.includes('refused to register the command')).length
+      check(prefix('M the prompt still composes when the command is refused'), typeof prompt === 'string' && prompt.length > 0, true)
+      check(prefix('M the prompt does not advertise a command that is not there'), prompt.includes('**`/swarm`**'), false)
+      check(prefix('M the refusal is reported'), warnings.some((line) => line.includes('refused to register the command') && line.includes('"swarm"') && line.includes('this host refuses the swarm command')), true)
+      check(prefix('M a continuing refusal is reported once'), reports(), 1)
+      check(prefix('M the refused command is tried again on the next render'), attempts.length > 1, true)
+    } finally {
+      console.warn = originalWarn
+    }
+  }
+
+  // --- N: the host refuses once and then accepts ----------------------------
+  // A refusal is not a verdict: the host may have been busy. The bundle asks
+  // again on the next render, and once the command is there it stays there
+  // exactly once — a command registered twice is a second copy of a command
+  // that already works.
+  {
+    const registered = []
+    const sections = []
+    const attempts = []
+    const warnings = []
+    const originalWarn = console.warn
+    console.warn = (...args) => { warnings.push(args.map((arg) => String(arg)).join(' ')) }
+    try {
+      const ctx = makeHost(registered, sections)
+      ctx.provide('agentTeams', teams)
+      ctx.provide('worktrees', worktrees)
+      ctx.provide('subagents', subagents)
+      ctx.provide('commands', {
+        register: () => {
+          attempts.push('swarm')
+          if (attempts.length === 1) throw new Error('this host was busy')
+          return () => {}
+        },
+      })
+      ctx.plugin({ inject: bundle.inject, apply: bundle.apply })
+      await tick()
+      const section = sections[0]
+      const prompt = section.text({ agent: { id: 'a1' } })
+      await tick()
+      // A second render must not register the command a second time.
+      section.text({ agent: { id: 'a1' } })
+      await tick()
+      check(prefix('N the refusal is reported before the retry'), warnings.some((line) => line.includes('refused to register the command')), true)
+      check(prefix('N the command is registered after the refusal'), attempts.length >= 2, true)
+      check(prefix('N the prompt advertises /swarm once the command is there'), prompt.includes('**`/swarm`**'), true)
+      check(prefix('N the command is registered exactly once'), attempts.length, 2)
+    } finally {
+      console.warn = originalWarn
+    }
+  }
+
   // --- E: the command registers late and the prompt then advertises it -------
   {
     const registered = []

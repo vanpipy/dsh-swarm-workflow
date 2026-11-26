@@ -40,10 +40,13 @@ const skill = read('skills/swarm-engineering/swarm-engineering.md')
  * Every surface this host offers, so no gated bullet is dropped.
  * `skill` is in the list because the plugin registers the role-methods skill
  * and the note gates that bullet on it.
+ * `list_subagent_models` is in the list because the host ships the model
+ * listing even though a session registers it only when its tool bundle
+ * carries it, and the note gates that bullet on it.
  */
 const ALL = [
   'subagent', 'subagent_fork', 'workflow', 'spawn_teammate', 'send_message', 'interrupt_agent',
-  'list_agents', 'wait_agent', 'team_task_create', 'team_task_get', 'team_task_list',
+  'list_agents', 'list_subagent_models', 'wait_agent', 'team_task_create', 'team_task_get', 'team_task_list',
   'team_task_update', 'create_goal', 'get_goal', 'update_goal', 'todo_write',
   'ask_user_question', 'schedule_create', 'job_output', 'job_kill', 'job_list', 'skill',
   // The plugin registers these three itself, so a live host has them in the
@@ -408,6 +411,116 @@ check('worker: the note comes first, then the policy, then the skill', () => {
   const skillAt = headingAt(work, bundle.WORKER_SKILL_SECTIONS[0])
   return noteAt >= 0 && policyAt > noteAt && skillAt > policyAt
 })
+
+// The Coordinator-only prose of the policy does not reach a worker. The bundle
+// cuts the policy at the section the note says stays with the Coordinator, so
+// every line from that heading onward is the Coordinator's. A line of it that
+// the worker's own note and skill do not carry is Coordinator-only prose, and
+// the worker view must not contain it: the heading can stay out of the view
+// while its body leaks in, and only the body tells the difference. The
+// passages are derived from the shipped policy file rather than written here,
+// so the rule keeps holding when the wording changes.
+
+/**
+ * A text folded into one line: every run of whitespace becomes one space, so a
+ * passage is compared with a view as it is rendered.
+ * @param {string} text - the text to fold.
+ * @returns {string} the folded text.
+ */
+const foldSpaces = (text) => text.replace(/\s+/gu, ' ').trim()
+
+/**
+ * The Coordinator-only region of the policy: the text from the heading the
+ * bundle cuts at to the end of the file.
+ * @returns {string} the region.
+ */
+const coordinatorPolicyRegion = () => {
+  const shape = policyShape()
+  const lines = overlay.split(/\r?\n/)
+  const index = lines.findIndex((line) => {
+    const match = /^#{1,6}\s+(.+?)\s*$/u.exec(line)
+    return match !== null && sectionNumber(match[1]) === shape.coordinatorOnly
+  })
+  if (index === -1) throw new Error(`the policy has no section ${shape.coordinatorOnly}`)
+  return lines.slice(index).join('\n')
+}
+
+/**
+ * The prose lines of a region.
+ *
+ * A heading, a comment and a table rule are structure rather than prose, and a
+ * line that carries less than a clause is too short to be distinctive.
+ * @param {string} region - the region to read.
+ * @returns {string[]} the prose lines, trimmed.
+ */
+const proseLines = (region) => region.split(/\r?\n/)
+  .map((line) => line.trim())
+  .filter((line) => {
+    if (line === '' || line.startsWith('#') || line.startsWith('<!--')) return false
+    if (!/[A-Za-z]/u.test(line)) return false
+    if (line.split(/\s+/u).length < 3) return false
+    return foldSpaces(line).length >= 24
+  })
+
+/**
+ * The text a worker legitimately reads besides the policy: the worker blocks of
+ * the runtime note and the skill sections the bundle hands a worker.
+ * @returns {string} the text.
+ */
+const workerOwnedText = () => [
+  ...bundle.parseRuntimeNote(note)
+    .filter((block) => block.scopes.includes('worker'))
+    .map((block) => block.text),
+  ...bundle.WORKER_SKILL_SECTIONS.map((title) => call('extractSection', skill, title) ?? ''),
+].join('\n')
+
+/**
+ * The Coordinator-only passages of the policy: the prose of the region the
+ * bundle cuts at, minus the passages the worker's own note and skill carry.
+ * @returns {string[]} the passages, folded to one line each.
+ */
+const coordinatorOnlyPassages = (() => {
+  const owned = foldSpaces(workerOwnedText())
+  const seen = new Set()
+  const passages = []
+  for (const line of proseLines(coordinatorPolicyRegion())) {
+    const passage = foldSpaces(line)
+    if (owned.includes(passage)) continue
+    if (seen.has(passage)) continue
+    seen.add(passage)
+    passages.push(passage)
+  }
+  return passages
+})()
+
+/**
+ * The Coordinator-only passages a view carries.
+ * @param {string} view - the composed prompt.
+ * @returns {string[]} the passages, in the order the policy lists them.
+ */
+const passagesIn = (view) => {
+  const text = foldSpaces(view)
+  return coordinatorOnlyPassages.filter((passage) => text.includes(passage))
+}
+
+for (const [label, view] of [['the full-host view', work], ['the minimal-host view', worker(MINIMAL)]]) {
+  check(`worker: no Coordinator-only prose reaches ${label} (${coordinatorOnlyPassages.length} passages inspected)`, () => {
+    // The check has to be able to fail: a view that carries one of the
+    // Coordinator-only passages has to be reported, so the probe below puts one
+    // into a copy of the view and the check has to notice it.
+    if (coordinatorOnlyPassages.length === 0) {
+      throw new Error('the policy carries no Coordinator-only prose to look for')
+    }
+    if (passagesIn(`${view}\n${coordinatorOnlyPassages[0]}`).length === 0) {
+      throw new Error('the check does not notice Coordinator-only prose in a view')
+    }
+    const leaked = passagesIn(view)
+    if (leaked.length > 0) {
+      throw new Error(`the view carries ${leaked.length} Coordinator-only passage(s): ${leaked.map((passage) => `"${passage.slice(0, 110)}"`).join(' | ')}`)
+    }
+    return true
+  })
+}
 
 // --- 3. Capability gating ---------------------------------------------------
 check('gating: the todo ledger bullet is kept on a full host', () =>

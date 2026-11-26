@@ -938,6 +938,23 @@ function reportRefusedSkill(name, error) {
 }
 
 /**
+ * Report a command the host refused to register.
+ *
+ * The console is the one channel every host has. A refusal nobody can see is
+ * a refusal that is swallowed: the command is missing from the session and
+ * nothing says why. The refusal is reported, never hidden, and the command it
+ * belongs to stays unregistered — a half-registered command is worse than an
+ * absent one.
+ * @param {string} name - the name of the command.
+ * @param {any} error - what the host threw.
+ * @returns {void}
+ */
+function reportRefusedCommand(name, error) {
+  const reason = error instanceof Error ? error.message : String(error)
+  console.warn(`swarm: the host refused to register the command "${name}": ${reason}`)
+}
+
+/**
  * Report a skill catalog that could not be synchronized.
  *
  * The refusal of one skill is reported by reportRefusedSkill; this is the
@@ -1468,6 +1485,11 @@ export function apply(ctx) {
   let skillStamp = null
   let skillDisposers = []
   let commandRegistered = false
+  // The context the command was registered in, and whether the host refused it.
+  // A refusal is worth another try: a host that was busy is not a host that
+  // will never accept the command.
+  let commandContext = null
+  let commandRefused = false
   // The skills the host refused to register, and the failures already reported.
   // A host that refuses one skill must not lose the others, and a failure that
   // keeps happening is one failure: it is reported once, not once per render.
@@ -1637,6 +1659,10 @@ export function apply(ctx) {
         // it must not vanish either: the failure is reported.
         reportOnce('the skill catalog', error, reportFailedSkillSync)
       }
+      // A command the host refused is worth another try: the prompt is
+      // composed on every render, so this is where a host that was busy gets
+      // its second chance. The refusal is still one refusal.
+      if (commandRefused) registerCommand(commandContext)
       const names = probeToolNames(ctx, context)
       // The runtime note is the only file that carries markers, so it is also
       // the only file that can name a surface this host does not offer.
@@ -1664,7 +1690,10 @@ export function apply(ctx) {
   // host's command registry the same way the primitives wait for their
   // services, so a host that provides the registry later still gets the
   // command — and the prompt only advertises `/swarm` once it is registered.
-  registerWhenAvailable(ctx, 'commands', 'swarm-command', (childCtx) => {
+  // The registration is a declaration, not a constant, because the prompt
+  // asks for it again when the host refused it: a host that was busy is not a
+  // host that will never accept the command.
+  function registerCommand(childCtx) {
     const commands = optionalService(childCtx, 'commands')
     if (commands === undefined) return undefined
     try {
@@ -1691,11 +1720,21 @@ export function apply(ctx) {
         },
       })
       commandRegistered = true
+      // The command is there: there is nothing to retry, and a second
+      // registration would be a second copy of a command that already works.
+      commandRefused = false
       return typeof disposer === 'function' ? disposer : undefined
-    } catch {
-      // A host that refuses the command must not break the prompt.
+    } catch (error) {
+      // A host that refuses the command must not break the prompt, and the
+      // refusal must not disappear either: it is reported, and the command
+      // stays unregistered — a half-registered command is worse than an
+      // absent one.
       commandRegistered = false
+      commandContext = childCtx
+      commandRefused = true
+      reportOnce('swarm', error, (thrown) => reportRefusedCommand('swarm', thrown))
       return undefined
     }
-  })
+  }
+  registerWhenAvailable(ctx, 'commands', 'swarm-command', registerCommand)
 }

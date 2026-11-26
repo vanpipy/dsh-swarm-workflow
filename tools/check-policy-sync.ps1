@@ -39,7 +39,8 @@
 #
 # THE OUTCOME KINDS
 #   PASS   a comparison was made and it agreed.
-#   FAIL   a comparison was made and it disagreed, or a file could not be read.
+#   FAIL   a comparison was made and it disagreed, a file could not be read, or
+#          a clause the repair table maps is not in the bundle's body.
 #   GAP    a comparison could not be made and what is at fault is not the
 #          bundle's own file.
 #   SKIP   the comparison was not needed in this mode.
@@ -275,7 +276,8 @@ $script:HostSurfaces = @(
   'acp_cache', 'acp_status', 'ask_user_question', 'compress', 'create_goal',
   'decompress', 'edit', 'exit_plan_mode', 'get_goal', 'glob', 'grep',
   'interrupt_agent', 'job_kill', 'job_list', 'job_output', 'list_agents',
-  'load_workspace_dependencies', 'present', 'pwsh', 'read', 'schedule_create',
+  'list_subagent_models', 'load_workspace_dependencies', 'present', 'pwsh',
+  'read', 'schedule_create',
   'schedule_delete', 'schedule_list', 'schedule_update', 'search_context',
   'send_message', 'skill', 'spawn_teammate', 'subagent', 'subagent_fork',
   'swarm_child', 'swarm_task', 'swarm_worktree', 'team_task_create',
@@ -321,6 +323,12 @@ function Find-Surfaces([string]$text) {
 #     Go copy's section sign (L-02) and the TypeScript copy's section 0 (L-03).
 #     Each of those rules maps the bundle's wording back to the canonical's, so
 #     the comparison still works.
+#
+# A rule that maps a clause the CANONICAL does not carry has a blind spot: the
+# bundle that HAS the clause and the bundle that LOST it normalise to the same
+# text, so the comparison cannot see the loss.  Every such clause is therefore
+# also a PRESENCE requirement: the table in (4c) names it, and the guard fails
+# the pair by name when the clause is not in the bundle's body.
 #
 # A new rule for a deliberate change is a 'from' -> 'to' pair in one of the
 # tables below, in the shape the table already uses.  The pair maps the BUNDLE
@@ -403,6 +411,69 @@ $LanguageRepairs = @(
   @{ id = 'L-02'; kind = 'rx'; rx = 'read\s+\u00A76\s+of\s+the\s+Go\s+craft'; to = 'read section 6 of the Go craft' }
   @{ id = 'L-03'; kind = 'rx'; rx = 'before\s+you\s+change\s+it\.\s+A\s+brief\s+names\s+the\s+piece:\s*"read\s+\u00A76\s+of\s+the\s+TypeScript\s+craft\s+before\s+you\s+touch\s+the\s+error\s+handling"\.\s*Everything\s+here\s+is\s+checkable\s+\u2014\s+if\s+a\s+rule\s+cannot\s+be\s+checked,\s+treat\s+it\s+as\s+advice\s+rather\s+than\s+guidance\.'; to = "before you change it: `"read $([char]0x00A7)6 of the TypeScript craft before you touch the error handling`". Everything here is checkable $([char]0x2014) a rule that cannot be checked is advice, not guidance." }
 )
+
+# (4c) the clauses the repair table maps that the CANONICAL does not carry.
+#      Such a clause is a blind spot: the repair rewrites it away before the
+#      comparison, so a bundle that HAS the clause and a bundle that LOST it
+#      normalise to the same text and the guard reads a clean run.  Every such
+#      clause is therefore also a PRESENCE requirement: it must be in the
+#      bundle's body, or the pair fails by name.
+#      The test is the repair rule's own matcher - the rule that would have
+#      rewritten the clause must still match it - so the rule and the
+#      requirement cannot drift apart; `clause` is the readable text the
+#      failure message quotes.
+#      The path and phrase rules (p01-p11, h01-h14) and D-C2's description
+#      exception are NOT listed: they map wordings and paths, not clauses, and
+#      the canonical carries each rule's target wording, so a loss is always
+#      visible in the comparison.  Requiring them per file would also be
+#      wrong: a craft file carries only the paths it uses.
+$RequiredClauses = @(
+  @{ id = 'R-I'; skill = 'swarm-craft-shared';      clause = "The pieces for the language in play live in that language's own file under ``languages/`` $([char]0x2014) read the one that matches the repository you are working in." }
+  @{ id = 'R-J'; skill = 'swarm-craft-shared';      clause = 'The paragraphs below carry the same ground in brief, for the stacks they name.' }
+  @{ id = 'T-01'; skill = 'swarm-craft-tester';     clause = 'The skill owns the **process**' }
+  @{ id = 'L-01'; skill = 'swarm-craft-rust';       clause = "A brief names the piece: `"read $([char]0x00A7)6 of the Rust craft before you touch the error handling`"." }
+  @{ id = 'L-02'; skill = 'swarm-craft-go';         clause = "read $([char]0x00A7)6 of the Go craft" }
+  @{ id = 'L-03'; skill = 'swarm-craft-typescript'; clause = "A brief names the piece: `"read $([char]0x00A7)6 of the TypeScript craft before you touch the error handling`"." }
+)
+
+# The repair rule with this id, from the tables the craft files use.  $null when
+# no rule carries the id: the required-clause table must not name a rule that
+# does not exist, or the requirement would silently test nothing.
+function Get-RepairRule([string]$id, [string]$kind) {
+  $tables = @()
+  if ($kind -eq 'shared') { $tables += , $SharedRepairs }
+  if ($kind -eq 'tester') { $tables += , $TesterRepair }
+  if ($kind -eq 'language') { $tables += , $LanguageRepairs }
+  foreach ($t in $tables) {
+    foreach ($r in $t) { if ([string]$r.id -eq $id) { return $r } }
+  }
+  return $null
+}
+
+# The required clauses this craft file does not carry.  A clause is present when
+# the repair rule that would have rewritten it still matches it in the bundle's
+# body: the rule and the requirement are one thing.
+function Test-RequiredClauses([string]$body, [string]$skill, [string]$kind) {
+  $missing = @()
+  foreach ($req in $RequiredClauses) {
+    if ([string]$req.skill -ne $skill) { continue }
+    $rule = Get-RepairRule ([string]$req.id) $kind
+    if ($null -eq $rule) {
+      $missing += , ([pscustomobject]@{ id = [string]$req.id; clause = [string]$req.clause; reason = 'no repair rule with this id exists in the tables' })
+      continue
+    }
+    $found = $false
+    if ([string]$rule.kind -eq 'rx') {
+      $found = ([regex]::IsMatch($body, [string]$rule.rx))
+    } else {
+      $found = $body.Contains([string]$rule.from)
+    }
+    if (-not $found) {
+      $missing += , ([pscustomobject]@{ id = [string]$req.id; clause = [string]$req.clause; reason = 'the clause is not in the bundle''s body' })
+    }
+  }
+  return $missing
+}
 
 # (5) D-C2's one documented exception to the frontmatter fold: the core craft
 #     file's description says "the role Skills apply" where the bundle says
@@ -1003,6 +1074,10 @@ if ($Mode -eq 'Self') {
   "               R-C, R-D, R-F, R-G, R-H, R-I, R-J, the tester's process-skill"
   "               naming, the language files' L-01, L-02, L-03, D-C2's description"
   "               exception (D-C2-exception), and a sentence-initial capital"
+  "   required  : the clause a rule maps that the canonical does not carry must be"
+  "               in the bundle's body, or the pair fails by name - R-I, R-J (the"
+  "               core file), T-01 (the tester file), L-01 (rust), L-02 (go),"
+  "               L-03 (typescript)"
   "   note      : craft bodies are compared with runs of whitespace collapsed, because the"
   "               port re-wrapped one paragraph of the core craft file.  Every word is"
   "               checked; a re-wrap on its own is not."
@@ -1071,6 +1146,16 @@ if ($Mode -eq 'Self') {
       Show-TokenDiff (Norm $bDesc) (Norm $cDesc) 'bundle   ' 'canonical'
       continue
     }
+
+    # --- the clauses the repair table maps must be present ------------------
+    # A repair that maps a clause the canonical does not carry rewrites that
+    # clause away before the comparison, so the comparison cannot see the loss.
+    # The clause is required here, by name.
+    $missingClauses = @(Test-RequiredClauses $bSplit.Body $p.Skill $p.Kind)
+    foreach ($m in $missingClauses) {
+      Check $label $false ("the bundle is missing a clause the repair table maps: {0} - {1} ({2})" -f $m.id, $m.clause, $m.reason)
+    }
+    if ($missingClauses.Count -gt 0) { continue }
 
     $bNorm = Norm $bBody
     $cNorm = Norm $cSplit.Body
